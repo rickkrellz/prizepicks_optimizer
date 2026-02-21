@@ -94,7 +94,7 @@ if 'selected_sports' not in st.session_state:
 # ===================================================
 
 # 🔑 YOU PUT YOUR API KEY HERE 👇
-ODDS_API_KEY = "YOUR_API_KEY_HERE"  # Replace with your actual key from the-odds-api.com
+ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"  # Replace with your actual key from the-odds-api.com
 
 @st.cache_data(ttl=600)
 def fetch_sportsbook_lines(sport="basketball_nba"):
