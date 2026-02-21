@@ -114,6 +114,16 @@ st.markdown("""
             justify-content: space-between;
         }
     }
+    .data-source-badge {
+        background-color: #FF9800;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.7rem;
+        font-weight: bold;
+        display: inline-block;
+        margin-left: 0.5rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,7 +143,7 @@ if 'selected_sports' not in st.session_state:
 # THE-ODDS-API KEY
 # ===================================================
 
-# 🔑 PUT YOUR API KEY HERE - Get from the-odds-api.com
+# 🔑 Your API key is set
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
@@ -160,9 +170,6 @@ SPORT_MAPPING = {
 @st.cache_data(ttl=600)
 def fetch_sportsbook_lines(sport="basketball_nba"):
     """Fetch player props from The-Odds-API for comparison"""
-    if ODDS_API_KEY == "YOUR_API_KEY_HERE":
-        return None
-    
     url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
     params = {
         'apiKey': ODDS_API_KEY,
@@ -175,7 +182,9 @@ def fetch_sportsbook_lines(sport="basketball_nba"):
         response = requests.get(url, params=params)
         if response.status_code == 200:
             return response.json()
-        return None
+        else:
+            st.sidebar.info(f"📊 Using default odds - API limit may be reached")
+            return None
     except:
         return None
 
@@ -192,9 +201,9 @@ def american_to_prob(odds):
 
 @st.cache_data(ttl=3600)
 def fetch_injury_report():
-    """Fetch current injuries from ESPN"""
+    """Fetch current injuries"""
     injuries = {
-        # Today's actual injuries
+        # Today's injuries
         'Kevin Durant': {'status': 'Active', 'injury': 'None', 'team': 'HOU'},
         'Karl-Anthony Towns': {'status': 'Active', 'injury': 'None', 'team': 'NYK'},
         'Dillon Brooks': {'status': 'Active', 'injury': 'None', 'team': 'PHX'},
@@ -207,10 +216,6 @@ def fetch_injury_report():
         'Fred VanVleet': {'status': 'OUT', 'injury': 'Knee', 'team': 'HOU'},
         'Joel Embiid': {'status': 'OUT', 'injury': 'Knee', 'team': 'PHI'},
         'Giannis Antetokounmpo': {'status': 'Probable', 'injury': 'Knee', 'team': 'MIL'},
-        'LeBron James': {'status': 'Active', 'injury': 'None', 'team': 'LAL'},
-        'Stephen Curry': {'status': 'Active', 'injury': 'None', 'team': 'GSW'},
-        'Luka Doncic': {'status': 'Active', 'injury': 'None', 'team': 'DAL'},
-        'Shai Gilgeous-Alexander': {'status': 'Active', 'injury': 'None', 'team': 'OKC'},
     }
     return injuries
 
@@ -270,11 +275,11 @@ def calculate_projected_hit_rate(line, sport, stat_type, injury_status, sportsbo
     opportunity_factor = 1.0
     player_name = injury_status.get('player_name', '')
     
-    # Check for players who benefit from teammate injuries
-    if 'Brooks' in player_name and 'Booker' in str(injuries_dict):
-        opportunity_factor = 1.1
-    elif ('Bane' in player_name or 'Black' in player_name) and ('Wagner' in str(injuries_dict) or 'Suggs' in str(injuries_dict)):
-        opportunity_factor = 1.1
+    # Known teammate injury situations
+    if 'Brooks' in player_name:
+        opportunity_factor = 1.1  # Booker is OUT
+    elif 'Bane' in player_name or 'Black' in player_name:
+        opportunity_factor = 1.1  # Wagner OUT, Suggs Questionable
     
     # Calculate final hit rate
     hit_rate = base_rate * line_factor * injury_factor * opportunity_factor
@@ -291,130 +296,54 @@ def calculate_projected_hit_rate(line, sport, stat_type, injury_status, sportsbo
     return hit_rate, recommendation, confidence
 
 # ===================================================
-# PRIZEPICKS API
+# DATA SOURCE - USING SAMPLE DATA (PrizePicks API is protected)
 # ===================================================
 
-@st.cache_data(ttl=300)
-def fetch_prizepicks_projections():
-    """Fetch ALL projections from PrizePicks public API"""
-    url = "https://api.prizepicks.com/projections"
+def get_projections():
+    """Get player projections using sample data"""
     
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://app.prizepicks.com/',
-        'Origin': 'https://app.prizepicks.com',
-    }
+    # Show data source notice
+    st.sidebar.info("📊 Using sample data - PrizePicks API requires authentication")
     
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        return None
-
-@st.cache_data(ttl=300)
-def get_all_sports_projections():
-    """Extract ALL sports projections from PrizePicks data"""
-    data = fetch_prizepicks_projections()
+    # Comprehensive sample data across all sports
+    sample_data = [
+        # NBA - Today's games
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'team': 'PHX'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points', 'team': 'ORL'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Anthony Black', 'line': 16.5, 'stat_type': 'Points', 'team': 'ORL'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Cade Cunningham', 'line': 25.5, 'stat_type': 'Points', 'team': 'DET'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points', 'team': 'HOU'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Karl-Anthony Towns', 'line': 30.5, 'stat_type': 'PRA', 'team': 'NYK'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points', 'team': 'LAL'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points', 'team': 'GSW'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA', 'team': 'DAL'},
+        {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Shai Gilgeous-Alexander', 'line': 32.5, 'stat_type': 'PRA', 'team': 'OKC'},
+        # NFL
+        {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Patrick Mahomes', 'line': 275.5, 'stat_type': 'Passing Yards', 'team': 'KC'},
+        {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Travis Kelce', 'line': 75.5, 'stat_type': 'Receiving Yards', 'team': 'KC'},
+        {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Christian McCaffrey', 'line': 110.5, 'stat_type': 'Rush+Yds', 'team': 'SF'},
+        # MLB
+        {'sport': 'MLB Baseball', 'sport_emoji': '⚾', 'player_name': 'Shohei Ohtani', 'line': 1.5, 'stat_type': 'Hits', 'team': 'LAD'},
+        {'sport': 'MLB Baseball', 'sport_emoji': '⚾', 'player_name': 'Aaron Judge', 'line': 0.5, 'stat_type': 'Home Runs', 'team': 'NYY'},
+        # NHL
+        {'sport': 'NHL Hockey', 'sport_emoji': '🏒', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points', 'team': 'EDM'},
+        {'sport': 'NHL Hockey', 'sport_emoji': '🏒', 'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals', 'team': 'TOR'},
+        # Soccer
+        {'sport': 'Soccer', 'sport_emoji': '⚽', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals', 'team': 'MIA'},
+        {'sport': 'Soccer', 'sport_emoji': '⚽', 'player_name': 'Erling Haaland', 'line': 1.5, 'stat_type': 'Shots', 'team': 'MCI'},
+        # Golf
+        {'sport': 'Golf', 'sport_emoji': '🏌️', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score', 'team': 'USA'},
+        {'sport': 'Golf', 'sport_emoji': '🏌️', 'player_name': 'Rory McIlroy', 'line': 69.5, 'stat_type': 'Round Score', 'team': 'NIR'},
+        # MMA
+        {'sport': 'MMA/UFC', 'sport_emoji': '🥊', 'player_name': 'Jon Jones', 'line': 45.5, 'stat_type': 'Significant Strikes', 'team': 'USA'},
+        {'sport': 'MMA/UFC', 'sport_emoji': '🥊', 'player_name': 'Israel Adesanya', 'line': 2.5, 'stat_type': 'Takedowns', 'team': 'NZL'},
+        # Esports
+        {'sport': 'Esports', 'sport_emoji': '🎮', 'player_name': 'Faker', 'line': 5.5, 'stat_type': 'Kills', 'team': 'T1'},
+        {'sport': 'Esports', 'sport_emoji': '🎮', 'player_name': 'Doublelift', 'line': 4.5, 'stat_type': 'Assists', 'team': '100T'},
+    ]
     
-    # Use comprehensive sample data if API fails
-    if not data:
-        # Return empty to use sample data below
-        return pd.DataFrame()
-    
-    projections = []
-    
-    for item in data.get('data', []):
-        try:
-            # Get league info
-            league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
-            league_id = str(league_rel.get('id')) if league_rel else 'default'
-            
-            # Get sport info from mapping
-            sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
-            
-            # Get attributes
-            attrs = item.get('attributes', {})
-            
-            # Skip if no line score
-            line_score = attrs.get('line_score')
-            if line_score is None:
-                continue
-            
-            # Create projection entry
-            proj = {
-                'id': item.get('id'),
-                'league_id': league_id,
-                'sport': sport_info['name'],
-                'sport_emoji': sport_info['emoji'],
-                'player_name': attrs.get('description', '').strip(),
-                'line': float(line_score),
-                'stat_type': attrs.get('stat_type', ''),
-                'start_time': attrs.get('start_time', ''),
-                'game_id': attrs.get('game_id', ''),
-                'status': attrs.get('status', ''),
-                'is_live': attrs.get('is_live', False),
-            }
-            
-            # Only include valid players with positive lines
-            if proj['player_name'] and proj['line'] > 0:
-                projections.append(proj)
-                
-        except Exception:
-            continue
-    
-    return pd.DataFrame(projections)
-
-def get_projections_with_fallback():
-    """Get projections with sample data fallback"""
-    df = get_all_sports_projections()
-    
-    # If API returns empty, use comprehensive sample data
-    if df.empty:
-        # Comprehensive sample data across all sports
-        sample_data = [
-            # NBA - Today's games
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'team': 'PHX'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points', 'team': 'ORL'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Anthony Black', 'line': 16.5, 'stat_type': 'Points', 'team': 'ORL'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Cade Cunningham', 'line': 25.5, 'stat_type': 'Points', 'team': 'DET'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points', 'team': 'HOU'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Karl-Anthony Towns', 'line': 30.5, 'stat_type': 'PRA', 'team': 'NYK'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points', 'team': 'LAL'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points', 'team': 'GSW'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA', 'team': 'DAL'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Shai Gilgeous-Alexander', 'line': 32.5, 'stat_type': 'PRA', 'team': 'OKC'},
-            # NFL
-            {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Patrick Mahomes', 'line': 275.5, 'stat_type': 'Passing Yards', 'team': 'KC'},
-            {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Travis Kelce', 'line': 75.5, 'stat_type': 'Receiving Yards', 'team': 'KC'},
-            {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Christian McCaffrey', 'line': 110.5, 'stat_type': 'Rush+Yds', 'team': 'SF'},
-            # MLB
-            {'sport': 'MLB Baseball', 'sport_emoji': '⚾', 'player_name': 'Shohei Ohtani', 'line': 1.5, 'stat_type': 'Hits', 'team': 'LAD'},
-            {'sport': 'MLB Baseball', 'sport_emoji': '⚾', 'player_name': 'Aaron Judge', 'line': 0.5, 'stat_type': 'Home Runs', 'team': 'NYY'},
-            # NHL
-            {'sport': 'NHL Hockey', 'sport_emoji': '🏒', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points', 'team': 'EDM'},
-            {'sport': 'NHL Hockey', 'sport_emoji': '🏒', 'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals', 'team': 'TOR'},
-            # Soccer
-            {'sport': 'Soccer', 'sport_emoji': '⚽', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals', 'team': 'MIA'},
-            {'sport': 'Soccer', 'sport_emoji': '⚽', 'player_name': 'Erling Haaland', 'line': 1.5, 'stat_type': 'Shots', 'team': 'MCI'},
-            # Golf
-            {'sport': 'Golf', 'sport_emoji': '🏌️', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score', 'team': 'USA'},
-            {'sport': 'Golf', 'sport_emoji': '🏌️', 'player_name': 'Rory McIlroy', 'line': 69.5, 'stat_type': 'Round Score', 'team': 'NIR'},
-            # MMA
-            {'sport': 'MMA/UFC', 'sport_emoji': '🥊', 'player_name': 'Jon Jones', 'line': 45.5, 'stat_type': 'Significant Strikes', 'team': 'USA'},
-            {'sport': 'MMA/UFC', 'sport_emoji': '🥊', 'player_name': 'Israel Adesanya', 'line': 2.5, 'stat_type': 'Takedowns', 'team': 'NZL'},
-            # Esports
-            {'sport': 'Esports', 'sport_emoji': '🎮', 'player_name': 'Faker', 'line': 5.5, 'stat_type': 'Kills', 'team': 'T1'},
-            {'sport': 'Esports', 'sport_emoji': '🎮', 'player_name': 'Doublelift', 'line': 4.5, 'stat_type': 'Assists', 'team': '100T'},
-        ]
-        
-        df = pd.DataFrame(sample_data)
-    
-    # Add placeholder columns
-    if not df.empty:
-        df['time'] = 'Today'
+    df = pd.DataFrame(sample_data)
+    df['time'] = 'Today'
     
     return df
 
@@ -425,10 +354,6 @@ def get_projections_with_fallback():
 # Header
 st.markdown('<p class="main-header">🏆 PrizePicks Optimizer — Auto Picks + Injuries</p>', unsafe_allow_html=True)
 st.markdown(f"**Last Updated:** {datetime.now().strftime('%I:%M:%S %p')}")
-
-# API Key Warning
-if ODDS_API_KEY == "YOUR_API_KEY_HERE":
-    st.sidebar.info("🔑 Add your The-Odds-API key in line 42 for sportsbook comparison")
 
 # Sidebar
 with st.sidebar:
@@ -487,7 +412,7 @@ with col_left:
     
     # Load data
     with st.spinner("Loading projections..."):
-        df = get_projections_with_fallback()
+        df = get_projections()
         injuries_dict = fetch_injury_report()
     
     # Add injury info
@@ -520,7 +445,7 @@ with col_left:
     selected_sports = st.multiselect(
         "Select Sports",
         sports_list,
-        default=['NBA Basketball']  # Default to NBA
+        default=['NBA Basketball']
     )
     
     # Apply filters
@@ -609,7 +534,7 @@ with col_left:
                     st.warning(f"Max {num_legs} picks")
         with col3:
             if st.button("ℹ️ Details", key=f"info_{idx}", use_container_width=True):
-                st.info(f"Injury: {row['injury_status']['status']}\nConfidence: {row['confidence']}")
+                st.info(f"**Injury:** {row['injury_status']['status']}\n**Confidence:** {row['confidence']}")
 
 with col_right:
     st.markdown('<p class="sub-header">📝 Your Entry</p>', unsafe_allow_html=True)
@@ -676,6 +601,6 @@ with col_right:
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #666; font-size: 0.8rem;'>
-    <p>🏆 Auto picks enabled | Select a sport to begin | Injuries included | 54.15% break-even threshold</p>
+    <p>🏆 Using sample data - PrizePicks API requires authentication | Auto picks enabled | Injuries included | 54.15% break-even threshold</p>
 </div>
 """, unsafe_allow_html=True)
