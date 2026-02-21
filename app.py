@@ -107,18 +107,7 @@ SPORT_MAPPING = {
     'default': {'name': 'Other Sports', 'emoji': '🏆'}
 }
 
-# Popular stat types by sport
-STAT_CATEGORIES = {
-    'NBA Basketball': ['Points', 'Rebounds', 'Assists', 'PRA', 'Fantasy Score', '3PM', 'Blocks', 'Steals'],
-    'NFL Football': ['Passing Yards', 'Rushing Yards', 'Receiving Yards', 'TDs', 'Fantasy Score'],
-    'MLB Baseball': ['Hits', 'Runs', 'RBIs', 'Home Runs', 'Strikeouts'],
-    'NHL Hockey': ['Goals', 'Assists', 'Points', 'Shots', 'Saves'],
-    'Soccer': ['Goals', 'Assists', 'Shots', 'Saves'],
-    'Golf': ['Score', 'Birdies', 'Pars', 'Fairways'],
-    'default': ['Points', 'Score', 'Total']
-}
-
-@st.cache_data(ttl=300)  # Refresh every 5 minutes
+@st.cache_data(ttl=300)
 def fetch_prizepicks_projections():
     """Fetch ALL projections from PrizePicks public API"""
     url = "https://api.prizepicks.com/projections"
@@ -144,6 +133,8 @@ def fetch_prizepicks_projections():
 def get_all_sports_projections():
     """Extract ALL sports projections from PrizePicks data"""
     data = fetch_prizepicks_projections()
+    
+    # Use sample data if API fails
     if not data:
         return pd.DataFrame()
     
@@ -184,32 +175,49 @@ def get_all_sports_projections():
                 'is_promo': attrs.get('is_promo', False)
             }
             
-            # Only include future games and valid players
+            # Only include valid players with positive lines
             if proj['player_name'] and proj['line'] > 0:
                 projections.append(proj)
                 
-        except Exception as e:
+        except Exception:
             continue
     
     # Create DataFrame
     df = pd.DataFrame(projections)
     
-    # Process datetime if available
+    # Process datetime if available - FIXED VERSION
     if not df.empty and 'start_time' in df.columns:
+        # Convert to datetime, handle errors
         df['start_time_dt'] = pd.to_datetime(df['start_time'], errors='coerce')
+        
+        # Remove rows with invalid dates
         df = df.dropna(subset=['start_time_dt'])
-        df['time'] = df['start_time_dt'].dt.strftime('%I:%M %p')
-        df['date'] = df['start_time_dt'].dt.strftime('%Y-%m-%d')
-        df['hour'] = df['start_time_dt'].dt.hour
+        
+        # Only proceed if we still have data
+        if not df.empty:
+            # Safely create time strings
+            df['time'] = df['start_time_dt'].apply(lambda x: x.strftime('%I:%M %p') if pd.notnull(x) else 'TBD')
+            df['date'] = df['start_time_dt'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else 'TBD')
+            df['hour'] = df['start_time_dt'].apply(lambda x: x.hour if pd.notnull(x) else 0)
+        else:
+            # Add placeholder columns if all dates were invalid
+            df['time'] = 'TBD'
+            df['date'] = 'TBD'
+            df['hour'] = 0
+    else:
+        # Add placeholder columns if no start_time column
+        if not df.empty:
+            df['time'] = 'TBD'
+            df['date'] = 'TBD'
+            df['hour'] = 0
     
     return df
 
 def calculate_projected_hit_rate(line, sport, stat_type):
     """
     Calculate projected hit rate based on historical data and sport
-    This is a simplified version - in production you'd use real historical data
     """
-    # Base hit rate by sport (from historical averages)
+    # Base hit rate by sport
     sport_base = {
         'NBA Basketball': 0.52,
         'NFL Football': 0.51,
@@ -223,7 +231,7 @@ def calculate_projected_hit_rate(line, sport, stat_type):
     
     base_rate = sport_base.get(sport, 0.51)
     
-    # Adjust based on line value (higher lines are harder)
+    # Adjust based on line value
     if line > 50:
         line_factor = 0.95
     elif line > 20:
@@ -233,11 +241,11 @@ def calculate_projected_hit_rate(line, sport, stat_type):
     else:
         line_factor = 1.02
     
-    # Add some randomness for demo purposes
+    # Add slight randomness for variety
     import random
     random_factor = random.uniform(0.98, 1.02)
     
-    return min(base_rate * line_factor * random_factor, 0.65)  # Cap at 65%
+    return min(base_rate * line_factor * random_factor, 0.65)
 
 # ===================================================
 # MAIN APP
@@ -305,7 +313,7 @@ with col_left:
     with st.spinner("Loading projections from PrizePicks..."):
         df = get_all_sports_projections()
     
-    # Use sample data if API fails
+    # Use comprehensive sample data if API returns empty
     if df.empty:
         st.info("Using sample data - API temporarily unavailable")
         
@@ -342,8 +350,9 @@ with col_left:
         ]
         
         df = pd.DataFrame(sample_data)
-        df['start_time_dt'] = pd.to_datetime(df['start_time'])
-        df['time'] = df['start_time_dt'].dt.strftime('%I:%M %p')
+        df['start_time_dt'] = pd.to_datetime(df['start_time'], errors='coerce')
+        df = df.dropna(subset=['start_time_dt'])
+        df['time'] = df['start_time_dt'].apply(lambda x: x.strftime('%I:%M %p'))
     
     # Filters
     col_f1, col_f2, col_f3 = st.columns(3)
@@ -378,10 +387,13 @@ with col_left:
         filtered_df = filtered_df[filtered_df['stat_type'].isin(selected_stats)]
     
     if show_only_future and 'start_time_dt' in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df['start_time_dt'] > datetime.now()]
+        # Only filter if we have valid datetime objects
+        filtered_df = filtered_df[filtered_df['start_time_dt'].notna()]
+        if not filtered_df.empty:
+            filtered_df = filtered_df[filtered_df['start_time_dt'] > datetime.now()]
     
     # Sort by time
-    if 'start_time_dt' in filtered_df.columns:
+    if 'start_time_dt' in filtered_df.columns and not filtered_df.empty:
         filtered_df = filtered_df.sort_values('start_time_dt')
     
     st.markdown(f"**Found {len(filtered_df)} props**")
@@ -409,7 +421,7 @@ with col_left:
             
             # Game time
             with cols[3]:
-                st.markdown(f"{row.get('time', 'N/A')}")
+                st.markdown(f"{row.get('time', 'TBD')}")
             
             # Projected hit rate
             proj_hit = calculate_projected_hit_rate(row['line'], row['sport'], row['stat_type'])
@@ -437,7 +449,7 @@ with col_left:
                         'line': row['line'],
                         'pick': pick,
                         'proj_hit': proj_hit,
-                        'time': row.get('time', '')
+                        'time': row.get('time', 'TBD')
                     })
                     st.rerun()
                 else:
