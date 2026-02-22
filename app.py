@@ -26,6 +26,7 @@ def get_central_time():
 # HIGH CONTRAST CSS - Dark backgrounds, light text
 st.markdown("""
 <style>
+    /* Main header */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -36,6 +37,8 @@ st.markdown("""
         padding: 1rem;
         border-radius: 10px;
     }
+    
+    /* Section headers */
     .section-header {
         font-size: 1.5rem;
         font-weight: 600;
@@ -45,6 +48,8 @@ st.markdown("""
         border-radius: 8px;
         margin: 1rem 0;
     }
+    
+    /* API Status indicators */
     .api-status {
         display: flex;
         gap: 2rem;
@@ -82,6 +87,7 @@ st.markdown("""
         box-shadow: 0 0 15px #C62828;
         animation: pulse-red 2s infinite;
     }
+    
     @keyframes pulse-green {
         0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
         70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); }
@@ -97,25 +103,31 @@ st.markdown("""
         70% { box-shadow: 0 0 0 10px rgba(198, 40, 40, 0); }
         100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
     }
+    
+    /* Sport badges - based on league IDs */
     .badge-nba { background-color: #17408B; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-nhl { background-color: #000000; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-mlb { background-color: #041E42; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
-    .badge-nfl { background-color: #013369; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-pga { background-color: #0A4C33; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-tennis { background-color: #CC5500; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-soccer { background-color: #006400; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-mma { background-color: #8B0000; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-esports { background-color: #4B0082; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-nascar { background-color: #8B4513; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
+    .badge-cbb { background-color: #FF4500; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
+    .badge-unrivaled { background-color: #FF69B4; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
+    .badge-ohockey { background-color: #000080; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-other { background-color: #555555; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
-    .badge-unknown { background-color: #FF0000; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     
+    /* MORE/LESS badges */
     .more-badge { background-color: #2E7D32; color: #FFFFFF; padding: 0.3rem 1rem; border-radius: 25px; font-weight: bold; font-size: 0.9rem; display: inline-block; min-width: 70px; text-align: center; border: 2px solid #FFFFFF; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
     .less-badge { background-color: #C62828; color: #FFFFFF; padding: 0.3rem 1rem; border-radius: 25px; font-weight: bold; font-size: 0.9rem; display: inline-block; min-width: 70px; text-align: center; border: 2px solid #FFFFFF; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
     
+    /* Hit rate colors */
     .hit-high { color: #FFFFFF; font-weight: bold; font-size: 1.1rem; background-color: #2E7D32; padding: 0.2rem 0.5rem; border-radius: 8px; border: 1px solid #FFFFFF; }
     .hit-low { color: #FFFFFF; font-weight: bold; font-size: 1.1rem; background-color: #C62828; padding: 0.2rem 0.5rem; border-radius: 8px; border: 1px solid #FFFFFF; }
     
+    /* Cards */
     .prop-card {
         background-color: #2C3E50;
         padding: 1rem;
@@ -142,12 +154,16 @@ st.markdown("""
         color: #FFFFFF;
         border: 2px solid #1E88E5;
     }
+    
+    /* Player name */
     .player-name {
         font-size: 1.2rem;
         font-weight: 700;
         color: #FFFFFF;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
+    
+    /* Stat line */
     .stat-line {
         background-color: #ECF0F1;
         color: #2C3E50;
@@ -158,6 +174,8 @@ st.markdown("""
         font-weight: 600;
         border: 1px solid #1E88E5;
     }
+    
+    /* Buttons */
     .stButton button {
         width: 100%;
         border-radius: 20px;
@@ -171,6 +189,8 @@ st.markdown("""
         color: #FFFFFF;
         border: 2px solid #FFFFFF;
     }
+    
+    /* Footer */
     .footer {
         text-align: center;
         color: #FFFFFF;
@@ -181,25 +201,24 @@ st.markdown("""
         margin-top: 2rem;
         border: 1px solid #1E88E5;
     }
-    .debug-box {
-        background-color: #1E1E1E;
-        color: #00FF00;
-        font-family: monospace;
-        padding: 1rem;
-        border-radius: 5px;
-        margin: 1rem 0;
-        border: 1px solid #00FF00;
-    }
+    
+    /* Sidebar */
     .css-1d391kg {
         background-color: #2C3E50;
     }
+    
+    /* Text colors */
     p, span, div, label {
         color: #FFFFFF !important;
     }
+    
+    /* Select box */
     .stSelectbox label, .stMultiselect label {
         color: #FFFFFF !important;
         font-weight: 600;
     }
+    
+    /* Success/Error messages */
     .stAlert {
         background-color: #2C3E50 !important;
         color: #FFFFFF !important;
@@ -217,8 +236,6 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
-if 'debug_mode' not in st.session_state:
-    st.session_state.debug_mode = False
 if 'api_status' not in st.session_state:
     st.session_state.api_status = {
         'prizepicks': 'checking',
@@ -232,76 +249,36 @@ if 'api_status' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING - Including all possible league IDs
+# COMPLETE SPORT MAPPING - Based on the league IDs you provided
 # ===================================================
 
 SPORT_MAPPING = {
-    # NBA - Main IDs
-    '4': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '7': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '46': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '47': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '48': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '49': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '50': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '51': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '52': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '53': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '54': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '55': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    
-    # NBA Quarters
-    '149': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '192': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    
-    # NHL
-    '3': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    
     # MLB
     '1': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
-    '43': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
-    '190': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
-    
-    # NFL
-    '2': {'name': 'NFL', 'emoji': '🏈', 'badge': 'badge-nfl'},
-    
-    # College Basketball
-    '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-nba'},
-    
-    # Soccer
-    '5': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
-    '6': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
-    '44': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
-    '45': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
-    
-    # Esports
-    '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '265': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '121': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '174': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '159': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '161': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '145': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     
     # MMA
     '12': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
     
-    # Boxing
-    '42': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-mma'},
-    
-    # Olympic Hockey
-    '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    
-    # Table Tennis
-    '286': {'name': 'Table Tennis', 'emoji': '🏓', 'badge': 'badge-other'},
-    
-    # Golf
+    # Esports / Gaming
+    '121': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
+    '145': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '159': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '161': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '174': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '176': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     
-    # Tennis
-    '5': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-tennis'},
+    # MLB Season
+    '190': {'name': 'MLB SZN', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # NBA Quarters
+    '192': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # College Basketball
+    '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
+    
+    # Esports
+    '265': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     
     # Curling
     '277': {'name': 'Curling', 'emoji': '🥌', 'badge': 'badge-other'},
@@ -309,15 +286,42 @@ SPORT_MAPPING = {
     # Handball
     '284': {'name': 'Handball', 'emoji': '🤾', 'badge': 'badge-other'},
     
+    # Unrivaled
+    '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-unrivaled'},
+    
+    # College Basketball 1H
+    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
+    
+    # Olympic Hockey
+    '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-ohockey'},
+    
+    # Esports
+    '383': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    
     # NASCAR
     '4': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
-    '9': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
-    '22': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
     
-    # Unrivaled
-    '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-nba'},
+    # Boxing
+    '42': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-mma'},
     
-    'default': {'name': 'Unknown', 'emoji': '❓', 'badge': 'badge-unknown'}
+    # MLB
+    '43': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # Tennis
+    '5': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-tennis'},
+    
+    # NBA
+    '7': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # NHL
+    '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
+    
+    # Esports
+    '80': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '84': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    
+    'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
 
 # ===================================================
@@ -333,7 +337,7 @@ def is_real_player_name(name):
     team_codes = [
         'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
         'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
-        'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS', 'LAL', 'LAC',
+        'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS',
         'ANA', 'ARI', 'BUF', 'CGY', 'CAR', 'CBJ', 'EDM', 'FLA', 'LAK', 'MTL', 'NSH', 'NJD',
         'NYI', 'NYR', 'OTT', 'PIT', 'SJS', 'SEA', 'STL', 'TBL', 'VAN', 'VGK', 'WPG',
     ]
@@ -346,7 +350,7 @@ def is_real_player_name(name):
     if ' ' not in name and name.isupper() and len(name) <= 4:
         return False
     
-    # Keep everything else - let the user see what's there
+    # Keep everything else
     return True
 
 # ===================================================
@@ -426,7 +430,7 @@ def calculate_projected_hit_rate(line, sport, injury_status):
         'NBA': 0.52,
         'NHL': 0.51,
         'MLB': 0.53,
-        'NFL': 0.51,
+        'MLB SZN': 0.53,
         'CBB': 0.51,
         'Soccer': 0.50,
         'PGA': 0.48,
@@ -437,7 +441,6 @@ def calculate_projected_hit_rate(line, sport, injury_status):
         'Esports': 0.52,
         'NASCAR': 0.50,
         'Olympic Hockey': 0.51,
-        'Table Tennis': 0.50,
         'Curling': 0.50,
         'Handball': 0.50,
         'Unrivaled': 0.50,
@@ -516,7 +519,7 @@ def get_player_projections_only():
             if not player_name:
                 continue
             
-            # Very relaxed filtering - only filter out obvious team codes
+            # Only filter out obvious team props
             if not is_real_player_name(player_name):
                 continue
             
@@ -628,20 +631,24 @@ with st.spinner("Loading player props from PrizePicks..."):
 
 # If API fails, use comprehensive sample data
 if df.empty:
-    st.info("📢 Using sample data - PrizePicks API limited")
+    st.info("📢 PrizePicks API limited - Using sample data")
     
     sample_data = [
         # NBA
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Giannis Antetokounmpo', 'line': 32.5, 'stat_type': 'PRA'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Joel Embiid', 'line': 30.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Nikola Jokic', 'line': 28.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Shai Gilgeous-Alexander', 'line': 32.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Jayson Tatum', 'line': 27.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Anthony Davis', 'line': 26.5, 'stat_type': 'Points'},
+        {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points'},
+        {'sport': 'MLB', 'sport_emoji': '⚾', 'badge_class': 'badge-mlb', 'player_name': 'Shohei Ohtani', 'line': 1.5, 'stat_type': 'Hits'},
+        {'sport': 'PGA', 'sport_emoji': '⛳', 'badge_class': 'badge-pga', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score'},
+        {'sport': 'Tennis', 'sport_emoji': '🎾', 'badge_class': 'badge-tennis', 'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games'},
+        {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals'},
+        {'sport': 'MMA', 'sport_emoji': '🥊', 'badge_class': 'badge-mma', 'player_name': 'Jon Jones', 'line': 45.5, 'stat_type': 'Strikes'},
+        {'sport': 'Esports', 'sport_emoji': '🎮', 'badge_class': 'badge-esports', 'player_name': 'Faker', 'line': 5.5, 'stat_type': 'Kills'},
+        {'sport': 'NASCAR', 'sport_emoji': '🏎️', 'badge_class': 'badge-nascar', 'player_name': 'Kyle Busch', 'line': 5.5, 'stat_type': 'Fastest Laps'},
+        {'sport': 'CBB', 'sport_emoji': '🏀', 'badge_class': 'badge-cbb', 'player_name': 'Zach Edey', 'line': 22.5, 'stat_type': 'Points'},
+        {'sport': 'Unrivaled', 'sport_emoji': '🏀', 'badge_class': 'badge-unrivaled', 'player_name': 'Breanna Stewart', 'line': 20.5, 'stat_type': 'Points'},
     ]
     
     df = pd.DataFrame(sample_data)
@@ -670,7 +677,7 @@ with st.sidebar.expander("📊 All Available Sports", expanded=True):
 # Debug section
 if st.session_state.debug_mode and 'unknown_leagues' in st.session_state:
     with st.expander("🔍 Debug: Unknown League IDs", expanded=True):
-        st.markdown('<div class="debug-box">', unsafe_allow_html=True)
+        st.markdown('<div style="background-color:#1E1E1E; color:#00FF00; padding:1rem; border-radius:5px; font-family:monospace;">', unsafe_allow_html=True)
         for item in list(st.session_state.unknown_leagues)[:20]:
             st.write(item)
         st.markdown('</div>', unsafe_allow_html=True)
