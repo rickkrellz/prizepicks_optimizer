@@ -114,6 +114,14 @@ st.markdown("""
         margin: 1rem 0;
         font-weight: bold;
     }
+    
+    .stats-box {
+        background-color: #34495E;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        color: white;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -123,7 +131,9 @@ if 'picks' not in st.session_state:
 if 'entry_amount' not in st.session_state:
     st.session_state.entry_amount = 10.0
 if 'show_players_only' not in st.session_state:
-    st.session_state.show_players_only = True
+    st.session_state.show_players_only = False  # Default to showing everything
+if 'player_keywords' not in st.session_state:
+    st.session_state.player_keywords = set()
 
 # Sport names based on league IDs
 LEAGUE_NAMES = {
@@ -155,88 +165,8 @@ LEAGUE_NAMES = {
     '284': 'Handball',
     '379': 'Olympic Hockey',
     '383': 'Esports',
+    '345': 'Other',  # New league
 }
-
-# ===================================================
-# IMPROVED PLAYER NAME DETECTION
-# ===================================================
-
-# List of known NBA players (to help with detection)
-NBA_PLAYERS = [
-    'LeBron James', 'Stephen Curry', 'Kevin Durant', 'Giannis Antetokounmpo', 
-    'Luka Doncic', 'Joel Embiid', 'Nikola Jokic', 'Jayson Tatum', 'Shai Gilgeous-Alexander',
-    'Anthony Davis', 'Devin Booker', 'Donovan Mitchell', 'Trae Young', 'Zion Williamson',
-    'Ja Morant', 'Kyrie Irving', 'James Harden', 'Russell Westbrook', 'Chris Paul',
-    'Kawhi Leonard', 'Paul George', 'Jimmy Butler', 'Bam Adebayo', 'Tyrese Haliburton',
-    'LaMelo Ball', 'Cade Cunningham', 'Victor Wembanyama', 'Chet Holmgren', 'Jalen Williams',
-    'Scottie Barnes', 'Evan Mobley', 'Paolo Banchero', 'Franz Wagner', 'Jalen Green',
-    'Alperen Sengun', 'Jaren Jackson Jr.', 'Desmond Bane', 'Dillon Brooks', 'Jaren Jackson',
-]
-
-# List of known tennis players
-TENNIS_PLAYERS = [
-    'Novak Djokovic', 'Carlos Alcaraz', 'Jannik Sinner', 'Daniil Medvedev', 
-    'Alexander Zverev', 'Andrey Rublev', 'Casper Ruud', 'Stefanos Tsitsipas',
-    'Holger Rune', 'Taylor Fritz', 'Frances Tiafoe', 'Tommy Paul', 'Ben Shelton',
-    'Sebastian Korda', 'Nick Kyrgios', 'Andy Murray', 'Stan Wawrinka', 'Marin Cilic',
-    'Grigor Dimitrov', 'Hubert Hurkacz', 'Alex de Minaur', 'Cameron Norrie',
-    'Lorenzo Musetti', 'Matteo Berrettini', 'Felix Auger-Aliassime', 'Denis Shapovalov',
-]
-
-# List of known golf players
-GOLF_PLAYERS = [
-    'Scottie Scheffler', 'Rory McIlroy', 'Jon Rahm', 'Xander Schauffele', 
-    'Patrick Cantlay', 'Viktor Hovland', 'Ludvig Aberg', 'Max Homa', 'Tony Finau',
-    'Collin Morikawa', 'Jordan Spieth', 'Justin Thomas', 'Brooks Koepka',
-    'Bryson DeChambeau', 'Dustin Johnson', 'Cameron Smith', 'Hideki Matsuyama',
-    'Sungjae Im', 'Tom Kim', 'Sam Burns', 'Wyndham Clark', 'Brian Harman',
-    'Keegan Bradley', 'Rickie Fowler', 'Jason Day', 'Adam Scott', 'Matt Fitzpatrick',
-]
-
-def is_likely_player_name(name):
-    """
-    More lenient detection for real player names:
-    - Exclude obvious team codes (3-4 letter all caps)
-    - Exclude patterns with numbers
-    - Include names that might have initials (like "Tony F.")
-    - Use known player lists for detection
-    """
-    if not name or len(name) < 3:
-        return False
-    
-    # Exclude all-caps team codes (OKC, LAL, VIT, etc.)
-    if name.isupper() and len(name) <= 5:
-        return False
-    
-    # Exclude patterns with numbers
-    if any(char.isdigit() for char in name):
-        return False
-    
-    # Exclude common team indicators
-    team_indicators = ['1Q', '2Q', '3Q', '4Q', '1H', '2H', 'Combo', '/']
-    for indicator in team_indicators:
-        if indicator in name:
-            return False
-    
-    # Check against known player lists
-    name_lower = name.lower()
-    all_players = NBA_PLAYERS + TENNIS_PLAYERS + GOLF_PLAYERS
-    for player in all_players:
-        if player.lower() in name_lower:
-            return True
-    
-    # If it has a space, it might be a player (even if not in our list)
-    if ' ' in name:
-        parts = name.split()
-        # If it has at least 2 parts and each part is reasonable
-        if len(parts) >= 2 and all(len(part) >= 2 for part in parts):
-            return True
-    
-    # Special case: initials like "Tony F."
-    if '.' in name and len(name) <= 10:
-        return True
-    
-    return False
 
 # Simple API call
 @st.cache_data(ttl=300)
@@ -265,7 +195,6 @@ def get_all_projections():
     
     projections = []
     league_counts = {}
-    player_counts = {}
     
     for item in data.get('data', []):
         try:
@@ -284,10 +213,6 @@ def get_all_projections():
             if league_rel:
                 league_id = str(league_rel.get('id', 'unknown'))
                 league_counts[league_id] = league_counts.get(league_id, 0) + 1
-                
-                # Track player names vs team names
-                if is_likely_player_name(player_name):
-                    player_counts[league_id] = player_counts.get(league_id, 0) + 1
             
             # Get sport name
             sport = LEAGUE_NAMES.get(league_id, f'League {league_id}')
@@ -296,7 +221,6 @@ def get_all_projections():
                 'league_id': league_id,
                 'sport': sport,
                 'player_name': player_name,
-                'is_player': is_likely_player_name(player_name),
                 'line': float(line_score),
                 'stat_type': attrs.get('stat_type', 'Unknown'),
             })
@@ -304,7 +228,6 @@ def get_all_projections():
             continue
     
     st.session_state.league_counts = league_counts
-    st.session_state.player_counts = player_counts
     return pd.DataFrame(projections)
 
 # ===================================================
@@ -324,7 +247,7 @@ with col2:
         st.cache_data.clear()
         st.rerun()
 with col3:
-    st.session_state.show_players_only = st.checkbox("👤 Show Players Only", value=True)
+    st.session_state.show_players_only = st.checkbox("👤 Show Players Only", value=False)
 
 # Load data
 with st.spinner("Loading props..."):
@@ -343,19 +266,13 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"**Total Props:** {len(df):,}")
     
-    # Show league distribution with player counts
+    # Show league distribution
     st.markdown("### 📊 League Distribution")
     if 'league_counts' in st.session_state:
-        # Sort by total count descending
         sorted_leagues = sorted(st.session_state.league_counts.items(), key=lambda x: x[1], reverse=True)
         for league_id, count in sorted_leagues:
             sport = LEAGUE_NAMES.get(league_id, f'League {league_id}')
-            player_count = st.session_state.player_counts.get(league_id, 0)
-            # Color code based on player percentage
-            if player_count > 0:
-                st.write(f"✅ **{sport}** (ID: {league_id}): {count} total ({player_count} players)")
-            else:
-                st.write(f"❌ **{sport}** (ID: {league_id}): {count} total ({player_count} players)")
+            st.write(f"**{sport}** (ID: {league_id}): {count}")
 
 # Main content
 col_left, col_right = st.columns([1.3, 0.7])
@@ -378,21 +295,19 @@ with col_left:
     if selected_leagues:
         filtered_df = filtered_df[filtered_df['league_id'].isin(selected_leagues)]
     
-    # Show player/team stats for selected leagues
-    if selected_leagues:
-        player_count = len(filtered_df[filtered_df['is_player'] == True])
-        team_count = len(filtered_df[filtered_df['is_player'] == False])
-        st.markdown(f"📊 Selected: {player_count} players, {team_count} teams")
-    
+    # Simple filter for players - just exclude obvious team codes
     if st.session_state.show_players_only:
-        filtered_df = filtered_df[filtered_df['is_player'] == True]
-        st.markdown('<div class="filter-note">🔍 Showing only player names</div>', unsafe_allow_html=True)
+        # Filter out all-caps 3-letter codes
+        filtered_df = filtered_df[~filtered_df['player_name'].str.match(r'^[A-Z]{3}$')]
+        # Filter out quarter indicators
+        filtered_df = filtered_df[~filtered_df['player_name'].str.contains('1Q|2Q|3Q|4Q|1H|2H')]
+        st.markdown('<div class="filter-note">🔍 Hiding obvious team props</div>', unsafe_allow_html=True)
     
     st.caption(f"**Showing {len(filtered_df)} props**")
     
     # Auto-select button
     if len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
-        if st.button("🤖 Auto-select best players"):
+        if st.button("🤖 Auto-select"):
             for _, row in filtered_df.head(num_legs).iterrows():
                 st.session_state.picks.append({
                     'sport': row['sport'],
@@ -405,7 +320,9 @@ with col_left:
     
     # Display props
     for idx, row in filtered_df.head(30).iterrows():
-        name_class = "player-name" if row['is_player'] else "team-name"
+        # Simple heuristic: all-caps 3-letter codes are teams
+        is_likely_team = bool(row['player_name'].match(r'^[A-Z]{3}$')) or '1Q' in row['player_name']
+        name_class = "team-name" if is_likely_team else "player-name"
         
         with st.container():
             st.markdown(f"""
@@ -454,12 +371,12 @@ with col_right:
             st.session_state.picks = []
             st.rerun()
     else:
-        st.info("👆 Add player props from the left panel")
+        st.info("👆 Add props from the left panel")
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} total props | {len(df[df['is_player']==True]):,} player props</p>
+    <p>🏀 {len(df):,} total props</p>
 </div>
 """, unsafe_allow_html=True)
