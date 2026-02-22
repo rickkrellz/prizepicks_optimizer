@@ -1,5 +1,5 @@
 import streamlit as st
-import pandas as_df
+import pandas as pd  # Fixed this line
 import numpy as np
 import requests
 from datetime import datetime
@@ -195,7 +195,6 @@ LEAGUE_MAPPING = {
     # NBA
     '7': 'NBA',
     '192': 'NBA',
-    '4': 'NBA',  # This is actually NASCAR but we'll detect by name
     
     # NHL
     '8': 'NHL',
