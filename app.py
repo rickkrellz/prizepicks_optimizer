@@ -5,6 +5,7 @@ import requests
 from datetime import datetime
 import time
 import random
+import pytz
 
 # Page config
 st.set_page_config(
@@ -13,7 +14,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# Clean CSS with better text visibility
+# Set timezone to Central Time
+central_tz = pytz.timezone('US/Central')
+utc_tz = pytz.UTC
+
+def get_central_time():
+    """Get current time in Central Time"""
+    utc_now = datetime.now(utc_tz)
+    central_now = utc_now.astimezone(central_tz)
+    return central_now
+
+# Clean CSS
 st.markdown("""
 <style>
     /* Main header */
@@ -95,16 +106,11 @@ st.markdown("""
         color: #000000;
     }
     
-    /* Player/Team name */
+    /* Player name */
     .player-name {
         font-size: 1.2rem;
         font-weight: 700;
         color: #0D47A1;
-    }
-    .team-name {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #9C27B0;
     }
     
     /* Stat line */
@@ -146,6 +152,8 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
+if 'hide_team_props' not in st.session_state:
+    st.session_state.hide_team_props = True  # Default to hiding team props
 
 # ===================================================
 # THE-ODDS-API KEY
@@ -221,24 +229,38 @@ SPORT_MAPPING = {
     'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
 
-# NBA team codes for better display
-NBA_TEAMS = {
-    'ATL': 'Hawks', 'BOS': 'Celtics', 'BKN': 'Nets', 'CHA': 'Hornets', 'CHI': 'Bulls',
-    'CLE': 'Cavaliers', 'DAL': 'Mavericks', 'DEN': 'Nuggets', 'DET': 'Pistons', 'GSW': 'Warriors',
-    'HOU': 'Rockets', 'IND': 'Pacers', 'LAC': 'Clippers', 'LAL': 'Lakers', 'MEM': 'Grizzlies',
-    'MIA': 'Heat', 'MIL': 'Bucks', 'MIN': 'Timberwolves', 'NO': 'Pelicans', 'NYK': 'Knicks',
-    'OKC': 'Thunder', 'ORL': 'Magic', 'PHI': '76ers', 'PHX': 'Suns', 'POR': 'Blazers',
-    'SAC': 'Kings', 'SA': 'Spurs', 'TOR': 'Raptors', 'UTA': 'Jazz', 'WAS': 'Wizards'
+# List of known team codes (NBA, NHL, MLB, etc.)
+TEAM_CODES = {
+    # NBA
+    'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
+    'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NO', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
+    'POR', 'SAC', 'SA', 'TOR', 'UTA', 'WAS',
+    
+    # NHL
+    'ANA', 'ARI', 'BOS', 'BUF', 'CGY', 'CAR', 'CHI', 'COL', 'CBJ', 'DAL', 'DET', 'EDM',
+    'FLA', 'LA', 'MIN', 'MTL', 'NSH', 'NJ', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT', 'SJ',
+    'SEA', 'STL', 'TB', 'TOR', 'VAN', 'VGK', 'WSH', 'WPG',
+    
+    # MLB
+    'ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CIN', 'CLE', 'COL', 'CWS', 'DET', 'HOU', 'KC',
+    'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SD', 'SF',
+    'SEA', 'STL', 'TB', 'TEX', 'TOR', 'WSH',
+    
+    # NFL
+    'ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB',
+    'HOU', 'IND', 'JAX', 'KC', 'LV', 'LAC', 'LA', 'MIA', 'MIN', 'NE', 'NO', 'NYG',
+    'NYJ', 'PHI', 'PIT', 'SF', 'SEA', 'TB', 'TEN', 'WSH',
 }
 
+def is_team_prop(player_name):
+    """Check if this is a team prop (3-letter code)"""
+    if not player_name or len(player_name) != 3:
+        return False
+    return player_name.upper() in TEAM_CODES
+
 def format_player_name(name, sport):
-    """Format name to show team + full name for team props"""
-    # Check if it's a 3-letter team code
-    if len(name) == 3 and name.isupper():
-        if sport == 'NBA' and name in NBA_TEAMS:
-            return f"{name} {NBA_TEAMS[name]}"
-        return f"{name} Team"
-    return name
+    """Format name - for team props just show the code"""
+    return name  # Keep it simple, just show the code
 
 # ===================================================
 # INJURY REPORT
@@ -308,7 +330,7 @@ def calculate_projected_hit_rate(line, sport, injury_status):
     else:
         line_factor = 1.02
     
-    # Injury adjustment - only for players, not teams
+    # Injury adjustment
     injury_factor = 1.0
     if injury_status['status'] == 'OUT':
         injury_factor = 0.3
@@ -375,8 +397,8 @@ def get_all_sports_projections():
             stat_type = attrs.get('stat_type') or 'Unknown'
             game_id = attrs.get('game_id', '')
             
-            # Check if this is a team prop (3-letter code)
-            is_team = len(player_name) == 3 and player_name.isupper()
+            # Check if this is a team prop
+            team_prop = is_team_prop(player_name)
             
             projections.append({
                 'league_id': league_id,
@@ -384,8 +406,8 @@ def get_all_sports_projections():
                 'sport_emoji': sport_info['emoji'],
                 'badge_class': sport_info['badge'],
                 'player_name': player_name,
-                'display_name': format_player_name(player_name, sport_info['name']),
-                'is_team': is_team,
+                'display_name': player_name,  # Just show the code for team props
+                'is_team': team_prop,
                 'line': float(line_score),
                 'stat_type': stat_type,
                 'game_id': game_id,
@@ -402,7 +424,7 @@ def get_projections_with_fallback():
         # Sample data if API fails
         df = pd.DataFrame([
             {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'display_name': 'Dillon Brooks', 'is_team': False, 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL', 'league_id': '7'},
-            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'CLE', 'display_name': 'CLE Cavaliers', 'is_team': True, 'line': 110.5, 'stat_type': 'Team Total', 'game_id': 'CLE vs DET', 'league_id': '7'},
+            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'LeBron James', 'display_name': 'LeBron James', 'is_team': False, 'line': 25.5, 'stat_type': 'Points', 'game_id': 'LAL vs GS', 'league_id': '7'},
         ])
     
     return df
@@ -411,8 +433,10 @@ def get_projections_with_fallback():
 # MAIN APP
 # ===================================================
 
+# Get current Central Time
+current_time = get_central_time()
 st.markdown('<p class="main-header">🎯 PrizePicks Optimizer</p>', unsafe_allow_html=True)
-st.markdown(f"**Last Updated:** {datetime.now().strftime('%I:%M:%S %p')}")
+st.markdown(f"**Last Updated:** {current_time.strftime('%I:%M:%S %p CT')}")
 
 # Sidebar
 with st.sidebar:
@@ -424,6 +448,10 @@ with st.sidebar:
     st.markdown("### 🤖 Auto Features")
     st.session_state.auto_select = st.checkbox("Auto-select best picks", value=True)
     st.session_state.show_recommended = st.checkbox("Show only recommended ( >54.15%)", value=False)
+    
+    st.markdown("---")
+    st.markdown("### 🎮 Prop Type")
+    st.session_state.hide_team_props = st.checkbox("Hide Team Props (Show only players)", value=True)
     
     st.markdown("---")
     st.markdown("### 📊 6-Leg Flex")
@@ -442,11 +470,8 @@ if df.empty:
     st.error("No data loaded")
     st.stop()
 
-# Add injury status (only for players, not teams)
-df['injury_status'] = df.apply(
-    lambda row: {'status': 'Active'} if row['is_team'] else get_player_injury_status(row['player_name'], injuries_dict), 
-    axis=1
-)
+# Add injury status
+df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
 
 # Calculate hit rates
 df['hit_rate'] = df.apply(lambda row: calculate_projected_hit_rate(
@@ -454,37 +479,44 @@ df['hit_rate'] = df.apply(lambda row: calculate_projected_hit_rate(
 df['recommendation'] = df['hit_rate'].apply(lambda x: 'MORE' if x > 0.5415 else 'LESS')
 df = df.sort_values('hit_rate', ascending=False)
 
+# Filter out team props if enabled
+if st.session_state.hide_team_props:
+    player_df = df[~df['is_team']].copy()
+else:
+    player_df = df.copy()
+
 # Sidebar stats
-st.sidebar.markdown(f"**Loaded:** {len(df):,} props")
+st.sidebar.markdown(f"**Loaded:** {len(df):,} total props")
 st.sidebar.markdown(f"**Players:** {len(df[~df['is_team']]):,}")
 st.sidebar.markdown(f"**Teams:** {len(df[df['is_team']]):,}")
-st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
-st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
+st.sidebar.markdown(f"**Showing:** {len(player_df):,} player props")
+st.sidebar.markdown(f"**MORE:** {len(player_df[player_df['recommendation']=='MORE']):,}")
+st.sidebar.markdown(f"**LESS:** {len(player_df[player_df['recommendation']=='LESS']):,}")
 
 # Show sport breakdown in sidebar
 with st.sidebar.expander("📊 Sports Available"):
-    for sport, count in df['sport'].value_counts().items():
+    for sport, count in player_df['sport'].value_counts().items():
         st.write(f"{sport}: {count}")
 
 # Main content columns
 col_left, col_right = st.columns([1.3, 0.7])
 
 with col_left:
-    st.markdown('<p class="section-header">📋 Available Props</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">📋 Available Player Props</p>', unsafe_allow_html=True)
     
     # Sport filter
-    sports_list = sorted(df['sport'].unique())
+    sports_list = sorted(player_df['sport'].unique())
     selected_sports = st.multiselect("Select Sports", sports_list, default=['NBA'] if 'NBA' in sports_list else [])
     
     # Apply filters
-    filtered_df = df.copy()
+    filtered_df = player_df.copy()
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
     
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
-    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props ({len(filtered_df[filtered_df['is_team']])} team props)**")
+    st.caption(f"**Showing {len(filtered_df)} of {len(player_df)} player props**")
     
     # Auto-select
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
@@ -495,7 +527,6 @@ with col_left:
                 'badge_class': row['badge_class'],
                 'player': row['player_name'],
                 'display_name': row['display_name'],
-                'is_team': row['is_team'],
                 'stat': row['stat_type'],
                 'line': row['line'],
                 'pick': row['recommendation'],
@@ -508,14 +539,13 @@ with col_left:
         with st.container():
             hit_class = "hit-high" if row['hit_rate'] > 0.5415 else "hit-low"
             badge_class = row['badge_class']
-            name_class = "team-name" if row['is_team'] else "player-name"
             
             st.markdown(f"""
             <div class='prop-card'>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
                     <div>
-                        <span class='{name_class}'>{row['sport_emoji']} {row['display_name']}</span>
-                        <span class='{badge_class}' style='margin-left: 8px;'>{row['sport']}{' TEAM' if row['is_team'] else ''}</span>
+                        <span class='player-name'>{row['sport_emoji']} {row['display_name']}</span>
+                        <span class='{badge_class}' style='margin-left: 8px;'>{row['sport']}</span>
                     </div>
                     <span class='{hit_class}'>{row['hit_rate']*100:.1f}%</span>
                 </div>
@@ -536,7 +566,6 @@ with col_left:
                         'badge_class': row['badge_class'],
                         'player': row['player_name'],
                         'display_name': row['display_name'],
-                        'is_team': row['is_team'],
                         'stat': row['stat_type'],
                         'line': row['line'],
                         'pick': row['recommendation'],
@@ -552,12 +581,10 @@ with col_right:
     if st.session_state.picks:
         for i, pick in enumerate(st.session_state.picks):
             with st.container():
-                name_class = "team-name" if pick['is_team'] else "player-name"
-                
                 st.markdown(f"""
                 <div class='entry-card'>
                     <div style='display: flex; justify-content: space-between;'>
-                        <span class='{name_class}'>{pick['sport_emoji']} {pick['display_name']}</span>
+                        <span class='player-name'>{pick['sport_emoji']} {pick['display_name']}</span>
                         <span class='{"more-badge" if pick["pick"]=="MORE" else "less-badge"}' style='padding:0.2rem 0.8rem; font-size:0.8rem;'>
                             {pick['pick']}
                         </span>
@@ -605,16 +632,16 @@ with col_right:
             st.session_state.picks = []
             st.rerun()
     else:
-        st.info("👆 Add props from the left panel")
+        st.info("👆 Add player props from the left panel")
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🎯 {len(df):,} props loaded | 
-    <span style='color:#2E7D32;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
-    <span style='color:#C62828;'>{len(df[df['recommendation']=='LESS']):,} LESS</span> |
-    <span style='color:#9C27B0;'>{len(df[df['is_team']]):,} Team Props</span>
+    <p>🎯 {len(player_df):,} player props loaded | 
+    <span style='color:#2E7D32;'>{len(player_df[player_df['recommendation']=='MORE']):,} MORE</span> / 
+    <span style='color:#C62828;'>{len(player_df[player_df['recommendation']=='LESS']):,} LESS</span>
     </p>
+    <p style='font-size:0.8rem;'>Central Time (CT) | {current_time.strftime('%B %d, %Y')}</p>
 </div>
 """, unsafe_allow_html=True)
