@@ -151,6 +151,8 @@ if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = True
 if 'selected_sports' not in st.session_state:
     st.session_state.selected_sports = []
+if 'league_ids' not in st.session_state:
+    st.session_state.league_ids = set()
 
 # ===================================================
 # THE-ODDS-API KEY
@@ -160,19 +162,72 @@ if 'selected_sports' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING
+# COMPLETE SPORT MAPPING - UPDATED WITH ALL NBA LEAGUE IDS
 # ===================================================
 
 SPORT_MAPPING = {
+    # NBA - multiple possible league IDs
     '4': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '46': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '47': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '48': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '49': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '50': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '51': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '52': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '53': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '54': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    '55': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    
+    # WNBA
+    '14': {'name': 'WNBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_wnba'},
+    
+    # NFL
     '2': {'name': 'NFL Football', 'emoji': '🏈', 'api_sport': 'americanfootball_nfl'},
+    '15': {'name': 'College Football', 'emoji': '🏈', 'api_sport': 'americanfootball_ncaaf'},
+    '17': {'name': 'XFL Football', 'emoji': '🏈', 'api_sport': 'americanfootball_xfl'},
+    
+    # MLB
     '1': {'name': 'MLB Baseball', 'emoji': '⚾', 'api_sport': 'baseball_mlb'},
+    
+    # NHL
     '3': {'name': 'NHL Hockey', 'emoji': '🏒', 'api_sport': 'icehockey_nhl'},
+    
+    # Soccer
     '5': {'name': 'Soccer', 'emoji': '⚽', 'api_sport': 'soccer_uefa_champs_league'},
+    
+    # Golf
     '6': {'name': 'Golf', 'emoji': '🏌️', 'api_sport': 'golf_pga'},
+    
+    # MMA
     '7': {'name': 'MMA/UFC', 'emoji': '🥊', 'api_sport': 'mma_mixed_martial_arts'},
+    '11': {'name': 'Boxing', 'emoji': '🥊', 'api_sport': 'boxing_boxing'},
+    
+    # Tennis
     '8': {'name': 'Tennis', 'emoji': '🎾', 'api_sport': 'tennis_atp'},
+    
+    # Racing
+    '9': {'name': 'Auto Racing', 'emoji': '🏎️', 'api_sport': 'racing'},
+    '21': {'name': 'F1 Racing', 'emoji': '🏎️', 'api_sport': 'racing_f1'},
+    '22': {'name': 'NASCAR', 'emoji': '🏎️', 'api_sport': 'racing_nascar'},
+    
+    # Esports
     '10': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
+    '23': {'name': 'Esports - LoL', 'emoji': '🎮', 'api_sport': None},
+    '24': {'name': 'Esports - CS:GO', 'emoji': '🎮', 'api_sport': None},
+    '25': {'name': 'Esports - Valorant', 'emoji': '🎮', 'api_sport': None},
+    '26': {'name': 'Esports - Dota 2', 'emoji': '🎮', 'api_sport': None},
+    
+    # College Sports
+    '16': {'name': 'College Basketball', 'emoji': '🏀', 'api_sport': 'basketball_ncaab'},
+    
+    # Other
+    '12': {'name': 'Competitive Eating', 'emoji': '🍽️', 'api_sport': None},
+    '13': {'name': 'Culture Picks', 'emoji': '🎯', 'api_sport': None},
+    '18': {'name': 'Australian Rules', 'emoji': '🏉', 'api_sport': 'australian_rules'},
+    '19': {'name': 'Cricket', 'emoji': '🏏', 'api_sport': 'cricket'},
+    '20': {'name': 'Rugby', 'emoji': '🏉', 'api_sport': 'rugby_union'},
+    
     'default': {'name': 'Other Sports', 'emoji': '🏆', 'api_sport': None}
 }
 
@@ -308,7 +363,7 @@ def calculate_projected_hit_rate(line, sport, stat_type, injury_status, sportsbo
     return hit_rate, recommendation, confidence
 
 # ===================================================
-# FIXED PRIZEPICKS API - Now with proper data extraction
+# FIXED PRIZEPICKS API - Now with expanded sport mapping
 # ===================================================
 
 @st.cache_data(ttl=300)
@@ -364,6 +419,9 @@ def get_all_sports_projections():
     
     projections = []
     
+    # Clear league IDs set for new data
+    st.session_state.league_ids = set()
+    
     # Debug: Show total items
     total_items = len(data.get('data', []))
     st.sidebar.write(f"📡 API returned {total_items} total items")
@@ -394,6 +452,8 @@ def get_all_sports_projections():
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
+                # Store unique league IDs for debugging
+                st.session_state.league_ids.add(league_id)
             
             # Get sport info from mapping
             sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
@@ -437,11 +497,12 @@ def get_all_sports_projections():
             for sport, count in sport_counts.items():
                 st.write(f"{sport}: {count}")
         
-        # Show sample of NBA props if available
+        # Show NBA props if available
         nba_df = df[df['sport'] == 'NBA Basketball']
         if not nba_df.empty:
-            with st.sidebar.expander("🏀 Sample NBA Props"):
-                st.write(nba_df[['player_name', 'stat_type', 'line']].head(5))
+            with st.sidebar.expander("🏀 NBA Props Found"):
+                st.write(f"Total NBA props: {len(nba_df)}")
+                st.write(nba_df[['player_name', 'stat_type', 'line']].head(10))
     else:
         st.sidebar.warning("No props could be processed from API")
     
@@ -545,6 +606,13 @@ with st.sidebar:
                     st.write("Attributes keys:", list(attrs.keys()))
             else:
                 st.error("❌ API failed")
+        
+        if st.button("Show League IDs"):
+            if st.session_state.league_ids:
+                st.write("League IDs found:", sorted(st.session_state.league_ids))
+                st.write("Total unique leagues:", len(st.session_state.league_ids))
+            else:
+                st.write("No league IDs collected yet - refresh data")
     
     if st.button("🔄 Refresh Data", type="primary", use_container_width=True):
         st.cache_data.clear()
