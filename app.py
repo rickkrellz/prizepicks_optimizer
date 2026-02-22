@@ -51,15 +51,6 @@ st.markdown("""
         display: inline-block;
         margin-right: 0.3rem;
     }
-    .auto-pick-badge {
-        background-color: #4CAF50;
-        color: white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        font-weight: bold;
-        display: inline-block;
-    }
     .injury-badge {
         background-color: #f44336;
         color: white;
@@ -81,6 +72,16 @@ st.markdown("""
         border: 1px solid #e0e0e0;
         margin: 0.5rem 0;
     }
+    .debug-box {
+        background-color: #f0f0f0;
+        padding: 0.5rem;
+        border-radius: 0.3rem;
+        font-family: monospace;
+        font-size: 0.7rem;
+        max-height: 200px;
+        overflow: scroll;
+        margin: 0.5rem 0;
+    }
     @media (max-width: 768px) {
         .stCol {
             min-width: auto !important;
@@ -98,6 +99,8 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = True
+if 'debug_mode' not in st.session_state:
+    st.session_state.debug_mode = False
 
 # ===================================================
 # THE-ODDS-API KEY
@@ -106,7 +109,7 @@ if 'show_recommended' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING - Based on actual API League IDs
+# SPORT MAPPING - Using the actual league IDs you found
 # ===================================================
 
 SPORT_MAPPING = {
@@ -120,7 +123,7 @@ SPORT_MAPPING = {
     '8': {'name': 'Tennis', 'emoji': '🎾'},
     '6': {'name': 'Golf', 'emoji': '🏌️'},
     
-    # Esports / Gaming (all the IDs you found)
+    # Esports / Gaming
     '10': {'name': 'Esports', 'emoji': '🎮'},
     '12': {'name': 'Esports', 'emoji': '🎮'},
     '20': {'name': 'Esports', 'emoji': '🎮'},
@@ -186,6 +189,9 @@ def calculate_projected_hit_rate(line, sport, injury_status):
         'NHL Hockey': 0.51,
         'Soccer': 0.50,
         'Esports': 0.52,
+        'MMA/UFC': 0.49,
+        'Tennis': 0.50,
+        'Golf': 0.48,
     }
     
     base_rate = base_rates.get(sport, 0.51)
@@ -242,6 +248,7 @@ def get_all_sports_projections():
         return pd.DataFrame()
     
     projections = []
+    league_counts = {}
     
     for item in data.get('data', []):
         try:
@@ -260,6 +267,7 @@ def get_all_sports_projections():
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
+                league_counts[league_id] = league_counts.get(league_id, 0) + 1
             
             # Get sport info
             sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
@@ -268,6 +276,7 @@ def get_all_sports_projections():
             stat_type = attrs.get('stat_type') or 'Unknown'
             
             projections.append({
+                'league_id': league_id,
                 'sport': sport_info['name'],
                 'sport_emoji': sport_info['emoji'],
                 'player_name': player_name,
@@ -278,7 +287,13 @@ def get_all_sports_projections():
         except:
             continue
     
-    return pd.DataFrame(projections)
+    df = pd.DataFrame(projections)
+    
+    # Store league counts in session state for debugging
+    st.session_state.league_counts = league_counts
+    st.session_state.raw_sports = df['sport'].value_counts().to_dict() if not df.empty else {}
+    
+    return df
 
 # ===================================================
 # MAIN APP
@@ -302,6 +317,9 @@ with st.sidebar:
     st.markdown("### 📊 6-Leg Flex")
     st.markdown("**Break-even:** 54.15% per pick")
     
+    # Debug toggle
+    st.session_state.debug_mode = st.checkbox("🔧 Debug Mode", value=False)
+    
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
@@ -312,7 +330,7 @@ col_left, col_right = st.columns([1.3, 0.7])
 with col_left:
     st.markdown('<p class="sub-header">📋 Available Props</p>', unsafe_allow_html=True)
     
-    with st.spinner("Loading 17,000+ props from PrizePicks..."):
+    with st.spinner("Loading props from PrizePicks..."):
         df = get_all_sports_projections()
         injuries_dict = fetch_injury_report()
     
@@ -338,20 +356,40 @@ with col_left:
     # Show total count
     st.sidebar.success(f"✅ Loaded {len(df):,} props from PrizePicks")
     
-    # Sport filter
+    # DEBUG VIEW - Show what sports are actually in the data
+    if st.session_state.debug_mode:
+        with st.expander("🔍 Debug: Actual Sports in Data", expanded=True):
+            st.write("**Sports found in data:**")
+            sport_counts = df['sport'].value_counts()
+            for sport, count in sport_counts.head(10).items():
+                st.write(f"  • {sport}: {count:,} props")
+            if len(sport_counts) > 10:
+                st.write(f"  ... and {len(sport_counts)-10} more sports")
+    
+    # Sport filter - Use actual sport names from the data
     sports_list = sorted(df['sport'].unique())
-    default_sports = ['NBA Basketball'] if 'NBA Basketball' in sports_list else []
-    selected_sports = st.multiselect("Select Sports", sports_list, default=default_sports)
+    
+    # Show what's available
+    st.caption(f"**{len(sports_list)} sports available**")
+    
+    selected_sports = st.multiselect(
+        "Select Sports", 
+        sports_list,
+        default=[s for s in sports_list if 'NBA' in s or 'Basketball' in s][:1] if any('NBA' in s for s in sports_list) else []
+    )
     
     # Apply filters
     filtered_df = df.copy()
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
+        st.caption(f"**Showing {len(filtered_df):,} of {len(df):,} total props**")
+    else:
+        st.info("👆 Select sports above to view props")
+        filtered_df = pd.DataFrame()
     
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
-    
-    st.caption(f"**Showing {len(filtered_df):,} of {len(df):,} total props**")
+        st.caption(f"**After recommended filter: {len(filtered_df):,} props**")
     
     # Auto-select if enabled
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
@@ -369,51 +407,62 @@ with col_left:
         st.rerun()
     
     # Display props
-    for idx, row in filtered_df.head(20).iterrows():
-        hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
-        badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
-        
-        injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>" if row['injury_status']['status'] != 'Active' else ""
-        
-        st.markdown(f"""
-        <div class='pick-card'>
-            <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
-                <div style='display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;'>
-                    <span style='font-size: 1.2rem;'>{row['sport_emoji']}</span>
-                    <span><strong>{row['player_name']}</strong></span>
-                    <span class='sport-badge'>{row['sport']}</span>
-                    {injury_badge}
-                </div>
-                <div style='display: flex; align-items: center; gap: 0.5rem;'>
-                    <span>{row['stat_type']} {row['line']}</span>
-                    <span class='{hit_color}' style='font-weight: bold;'>{row['hit_rate']*100:.1f}%</span>
-                    <span style='background-color: {badge_color}; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; min-width: 45px; text-align: center;'>
-                        {row['recommendation']}
-                    </span>
+    if not filtered_df.empty:
+        for idx, row in filtered_df.head(20).iterrows():
+            hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
+            badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
+            
+            injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>" if row['injury_status']['status'] != 'Active' else ""
+            
+            st.markdown(f"""
+            <div class='pick-card'>
+                <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
+                    <div style='display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;'>
+                        <span style='font-size: 1.2rem;'>{row['sport_emoji']}</span>
+                        <span><strong>{row['player_name']}</strong></span>
+                        <span class='sport-badge'>{row['sport']}</span>
+                        {injury_badge}
+                    </div>
+                    <div style='display: flex; align-items: center; gap: 0.5rem;'>
+                        <span>{row['stat_type']} {row['line']}</span>
+                        <span class='{hit_color}' style='font-weight: bold;'>{row['hit_rate']*100:.1f}%</span>
+                        <span style='background-color: {badge_color}; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; min-width: 45px; text-align: center;'>
+                            {row['recommendation']}
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
+            
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                pick = st.selectbox("Pick", ["MORE", "LESS"], 
+                                   index=0 if row['recommendation'] == "MORE" else 1,
+                                   key=f"pick_{idx}", label_visibility="collapsed")
+            with col2:
+                if st.button("➕ Add", key=f"add_{idx}", use_container_width=True):
+                    if len(st.session_state.picks) < num_legs:
+                        st.session_state.picks.append({
+                            'sport_emoji': row['sport_emoji'],
+                            'sport': row['sport'],
+                            'player': row['player_name'],
+                            'stat': row['stat_type'],
+                            'line': row['line'],
+                            'pick': pick,
+                            'hit_rate': row['hit_rate'],
+                            'injury': row['injury_status']['status'],
+                        })
+                        st.rerun()
+    else:
+        if selected_sports:
+            st.warning(f"No props found for selected sports. Try different sports.")
         
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            pick = st.selectbox("Pick", ["MORE", "LESS"], 
-                               index=0 if row['recommendation'] == "MORE" else 1,
-                               key=f"pick_{idx}", label_visibility="collapsed")
-        with col2:
-            if st.button("➕ Add", key=f"add_{idx}", use_container_width=True):
-                if len(st.session_state.picks) < num_legs:
-                    st.session_state.picks.append({
-                        'sport_emoji': row['sport_emoji'],
-                        'sport': row['sport'],
-                        'player': row['player_name'],
-                        'stat': row['stat_type'],
-                        'line': row['line'],
-                        'pick': pick,
-                        'hit_rate': row['hit_rate'],
-                        'injury': row['injury_status']['status'],
-                    })
-                    st.rerun()
+        # Show sample of what's available
+        if st.session_state.debug_mode:
+            st.markdown('<div class="debug-box">', unsafe_allow_html=True)
+            st.write("Sample of available data:")
+            st.write(df[['sport', 'player_name', 'stat_type']].head(10))
+            st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<p class="sub-header">📝 Your Entry</p>', unsafe_allow_html=True)
@@ -472,6 +521,6 @@ with col_right:
 st.markdown("---")
 st.markdown(f"""
 <div style='text-align: center; color: #666; font-size: 0.8rem;'>
-    <p>🏆 {len(df):,} live props loaded from PrizePicks | Auto picks enabled | 54.15% break-even</p>
+    <p>🏆 {len(df):,} live props loaded | Enable Debug Mode to see available sports</p>
 </div>
 """, unsafe_allow_html=True)
