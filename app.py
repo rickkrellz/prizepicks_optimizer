@@ -54,6 +54,7 @@ st.markdown("""
     .badge-handball { background-color: #CD5C5C; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-tt { background-color: #708090; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-other { background-color: #757575; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-unknown { background-color: #FF0000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     
     /* Quarter/Half badges */
     .badge-1q { background-color: #FF6B6B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
@@ -92,6 +93,16 @@ st.markdown("""
         border-radius: 10px;
         margin: 1rem 0;
         color: #000000;
+    }
+    
+    /* Debug section */
+    .debug-box {
+        background-color: #f0f0f0;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border-left: 4px solid #FF5722;
+        font-family: monospace;
     }
     
     /* Player name */
@@ -140,6 +151,10 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
+if 'debug_mode' not in st.session_state:
+    st.session_state.debug_mode = True  # Turn debug on by default
+if 'raw_data' not in st.session_state:
+    st.session_state.raw_data = None
 
 # ===================================================
 # THE-ODDS-API KEY
@@ -148,57 +163,13 @@ if 'show_recommended' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING - Based on actual PrizePicks leagues
+# INITIAL SPORT MAPPING - Will be updated based on debug
 # ===================================================
 
 SPORT_MAPPING = {
-    # NBA and variants
+    # We'll start with a basic mapping and let debug show us the rest
     '4': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '46': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '47': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '48': {'name': 'NBA 1Q', 'emoji': '🏀', 'badge': 'badge-1q'},
-    '49': {'name': 'NBA 2H', 'emoji': '🏀', 'badge': 'badge-2h'},
-    
-    # NHL
-    '3': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    '50': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    
-    # MLB
-    '1': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
-    '51': {'name': 'MLB SZN', 'emoji': '⚾', 'badge': 'badge-mlb'},
-    
-    # College Basketball
-    '52': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
-    '53': {'name': 'CBB 1H', 'emoji': '🏀', 'badge': 'badge-1h'},
-    
-    # Golf
-    '6': {'name': 'PGA', 'emoji': '⛳', 'badge': 'badge-pga'},
-    '54': {'name': 'Euro Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
-    
-    # NASCAR
-    '9': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
-    '22': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
-    '55': {'name': 'NASCAR TT', 'emoji': '🏎️', 'badge': 'badge-nascar'},
-    
-    # MMA/Boxing
-    '7': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
-    '56': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-boxing'},
-    
-    # Esports
-    '10': {'name': 'CS2', 'emoji': '🎮', 'badge': 'badge-cs2'},
-    '11': {'name': 'LoL', 'emoji': '🎮', 'badge': 'badge-lol'},
-    '12': {'name': 'CoD', 'emoji': '🎮', 'badge': 'badge-cod'},
-    '13': {'name': 'Valorant', 'emoji': '🎮', 'badge': 'badge-val'},
-    '14': {'name': 'Dota 2', 'emoji': '🎮', 'badge': 'badge-dota2'},
-    '15': {'name': 'RL', 'emoji': '🎮', 'badge': 'badge-rl'},
-    
-    # Other sports
-    '8': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-other'},
-    '57': {'name': 'Handball', 'emoji': '🤾', 'badge': 'badge-handball'},
-    '58': {'name': 'Olympics', 'emoji': '🏅', 'badge': 'badge-olympics'},
-    '59': {'name': 'Table Tennis', 'emoji': '🏓', 'badge': 'badge-tt'},
-    
-    'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
+    'default': {'name': 'Unknown', 'emoji': '❓', 'badge': 'badge-unknown'}
 }
 
 # ===================================================
@@ -233,29 +204,12 @@ def get_player_injury_status(player_name, injuries_dict):
 def calculate_projected_hit_rate(line, sport, injury_status):
     base_rates = {
         'NBA': 0.52,
-        'NBA 1Q': 0.50,
-        'NBA 2H': 0.50,
         'NHL': 0.51,
         'MLB': 0.53,
-        'MLB SZN': 0.53,
-        'CBB': 0.51,
-        'CBB 1H': 0.50,
         'PGA': 0.48,
-        'Euro Golf': 0.48,
         'NASCAR': 0.50,
-        'NASCAR TT': 0.50,
-        'MMA': 0.49,
-        'Boxing': 0.49,
         'CS2': 0.52,
         'LoL': 0.52,
-        'CoD': 0.52,
-        'Valorant': 0.52,
-        'Dota 2': 0.52,
-        'RL': 0.52,
-        'Tennis': 0.50,
-        'Handball': 0.50,
-        'Olympics': 0.50,
-        'Table Tennis': 0.50,
     }
     
     base_rate = base_rates.get(sport, 0.51)
@@ -303,7 +257,9 @@ def fetch_prizepicks_projections():
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            st.session_state.raw_data = data
+            return data
         return None
     except:
         return None
@@ -316,6 +272,7 @@ def get_all_sports_projections():
         return pd.DataFrame()
     
     projections = []
+    league_stats = {}
     
     for item in data.get('data', []):
         try:
@@ -332,6 +289,17 @@ def get_all_sports_projections():
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
+                
+                # Track league stats
+                if league_id not in league_stats:
+                    league_stats[league_id] = {'count': 0, 'samples': []}
+                league_stats[league_id]['count'] += 1
+                if len(league_stats[league_id]['samples']) < 5:
+                    league_stats[league_id]['samples'].append({
+                        'player': player_name[:30],
+                        'game': attrs.get('game_id', 'Unknown')[:30],
+                        'stat': attrs.get('stat_type', 'Unknown')
+                    })
             
             sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
             stat_type = attrs.get('stat_type') or 'Unknown'
@@ -350,6 +318,9 @@ def get_all_sports_projections():
         except:
             continue
     
+    # Store league stats in session state for debug
+    st.session_state.league_stats = league_stats
+    
     return pd.DataFrame(projections)
 
 def get_projections_with_fallback():
@@ -358,8 +329,8 @@ def get_projections_with_fallback():
     if df.empty:
         # Sample data if API fails
         df = pd.DataFrame([
-            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL'},
-            {'sport': 'NASCAR', 'sport_emoji': '🏎️', 'badge_class': 'badge-nascar', 'player_name': 'Kyle Busch', 'line': 5.5, 'stat_type': 'Fastest Laps', 'game_id': 'Autotrader 400'},
+            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL', 'league_id': '4'},
+            {'sport': 'Unknown', 'sport_emoji': '❓', 'badge_class': 'badge-unknown', 'player_name': 'Sample Player', 'line': 10.5, 'stat_type': 'Points', 'game_id': 'Game', 'league_id': 'unknown'},
         ])
     
     return df
@@ -386,6 +357,8 @@ with st.sidebar:
     st.markdown("### 📊 6-Leg Flex")
     st.markdown("**Break-even:** 54.15% per pick")
     
+    st.session_state.debug_mode = st.checkbox("🔧 Debug Mode", value=True)
+    
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
@@ -398,6 +371,58 @@ with st.spinner("Loading props from PrizePicks..."):
 if df.empty:
     st.error("No data loaded")
     st.stop()
+
+# ===================================================
+# DEBUG SECTION - Shows what league IDs are in the data
+# ===================================================
+
+if st.session_state.debug_mode and 'league_stats' in st.session_state:
+    with st.expander("🔍 DEBUG: League ID Analysis", expanded=True):
+        st.markdown('<div class="debug-box">', unsafe_allow_html=True)
+        
+        st.subheader("League IDs Found in Data")
+        league_data = []
+        for league_id, stats in st.session_state.league_stats.items():
+            league_data.append({
+                'League ID': league_id,
+                'Count': stats['count'],
+                'Sample Players': ', '.join([s['player'] for s in stats['samples']]),
+                'Sample Games': ', '.join([s['game'] for s in stats['samples']])
+            })
+        
+        debug_df = pd.DataFrame(league_data)
+        st.dataframe(debug_df, use_container_width=True)
+        
+        # Search for specific terms
+        st.subheader("Search for Teams/Players")
+        search = st.text_input("Enter team or player name (e.g., ANA, EDM, 400, PGA, etc.)")
+        if search and st.session_state.raw_data:
+            results = []
+            for item in st.session_state.raw_data.get('data', []):
+                try:
+                    attrs = item.get('attributes', {})
+                    player = attrs.get('name') or attrs.get('description', '')
+                    game = attrs.get('game_id', '')
+                    if search.lower() in player.lower() or search.lower() in game.lower():
+                        league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
+                        league_id = league_rel.get('id', 'unknown')
+                        results.append({
+                            'League ID': league_id,
+                            'Player': player[:40],
+                            'Game': game[:40],
+                            'Stat': attrs.get('stat_type', 'Unknown'),
+                            'Line': attrs.get('line_score', 0)
+                        })
+                except:
+                    continue
+            
+            if results:
+                st.write(f"Found {len(results)} results:")
+                st.dataframe(pd.DataFrame(results), use_container_width=True)
+            else:
+                st.write("No results found")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # Add injury status
 df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
@@ -414,7 +439,7 @@ st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
 
 # Show sport breakdown in sidebar
-with st.sidebar.expander("📊 Sports Available"):
+with st.sidebar.expander("📊 Current Sport Mapping"):
     for sport, count in df['sport'].value_counts().items():
         st.write(f"{sport}: {count}")
 
