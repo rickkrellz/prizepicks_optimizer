@@ -7,8 +7,8 @@ import pytz
 
 # Page config
 st.set_page_config(
-    page_title="PrizePicks All Props",
-    page_icon="📊",
+    page_title="PrizePicks Player Props",
+    page_icon="🏀",
     layout="wide"
 )
 
@@ -21,7 +21,7 @@ def get_central_time():
     central_now = utc_now.astimezone(central_tz)
     return central_now
 
-# Simple CSS
+# Clean CSS
 st.markdown("""
 <style>
     .main-header {
@@ -62,6 +62,7 @@ st.markdown("""
         font-size: 0.8rem;
         font-weight: 600;
         display: inline-block;
+        margin-left: 8px;
     }
     
     .stat-line {
@@ -92,6 +93,28 @@ st.markdown("""
         border-radius: 8px;
         margin-top: 2rem;
     }
+    
+    .player-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+    }
+    
+    .team-name {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #FFA500;
+        opacity: 0.7;
+    }
+    
+    .filter-note {
+        background-color: #FFD700;
+        color: black;
+        padding: 0.5rem;
+        border-radius: 8px;
+        margin: 1rem 0;
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -100,39 +123,81 @@ if 'picks' not in st.session_state:
     st.session_state.picks = []
 if 'entry_amount' not in st.session_state:
     st.session_state.entry_amount = 10.0
+if 'show_players_only' not in st.session_state:
+    st.session_state.show_players_only = True
 
-# Sport names based on league IDs
+# Sport names based on league IDs (from your working sidebar)
 LEAGUE_NAMES = {
-    '1': 'Golf',
-    '4': 'NASCAR',
-    '5': 'Tennis',
-    '6': 'Soccer',
     '7': 'NBA',
-    '8': 'NHL',
-    '12': 'MMA',
-    '20': 'CBB',
-    '42': 'Boxing',
-    '43': 'MLB',
-    '80': 'Esports',
     '82': 'Esports',
+    '5': 'Tennis',
+    '192': 'NBA',
+    '190': 'MLB',
+    '8': 'NHL',
+    '20': 'CBB',
+    '265': 'Esports',
     '84': 'Esports',
-    '121': 'Esports',
-    '131': 'Golf',
     '145': 'Esports',
+    '43': 'MLB',
+    '1': 'Golf',
+    '121': 'Esports',
     '159': 'Esports',
+    '288': 'Unrivaled',
+    '4': 'NASCAR',
+    '12': 'MMA',
+    '42': 'Boxing',
+    '80': 'Esports',
+    '131': 'Golf',
     '161': 'Esports',
     '174': 'Esports',
     '176': 'Esports',
-    '190': 'MLB',
-    '192': 'NBA',
-    '265': 'Esports',
     '277': 'Curling',
     '284': 'Handball',
-    '288': 'Unrivaled',
     '290': 'CBB',
     '379': 'Olympic Hockey',
     '383': 'Esports',
 }
+
+# ===================================================
+# PLAYER NAME DETECTION - SIMPLE BUT EFFECTIVE
+# ===================================================
+
+def is_likely_player_name(name):
+    """
+    Simple detection for real player names:
+    - Must have at least 5 characters
+    - Must have a space (first and last name)
+    - No all-caps team codes (like OKC, VIT)
+    - No single words
+    """
+    if not name or len(name) < 5:
+        return False
+    
+    # Must have a space (first and last name)
+    if ' ' not in name:
+        return False
+    
+    # Split into parts
+    parts = name.split()
+    
+    # Must have at least 2 parts
+    if len(parts) < 2:
+        return False
+    
+    # Check each part - if any part is all caps and short, it's probably a team
+    for part in parts:
+        if part.isupper() and len(part) <= 4:
+            return False
+    
+    # No numbers in player names
+    if any(char.isdigit() for char in name):
+        return False
+    
+    # Check if it looks like a real person name (not all caps)
+    if name.isupper():
+        return False
+    
+    return True
 
 # Simple API call
 @st.cache_data(ttl=300)
@@ -161,6 +226,7 @@ def get_all_projections():
     
     projections = []
     league_counts = {}
+    player_counts = {}
     
     for item in data.get('data', []):
         try:
@@ -179,6 +245,10 @@ def get_all_projections():
             if league_rel:
                 league_id = str(league_rel.get('id', 'unknown'))
                 league_counts[league_id] = league_counts.get(league_id, 0) + 1
+                
+                # Track player names vs team names
+                if is_likely_player_name(player_name):
+                    player_counts[league_id] = player_counts.get(league_id, 0) + 1
             
             # Get sport name
             sport = LEAGUE_NAMES.get(league_id, f'League {league_id}')
@@ -187,6 +257,7 @@ def get_all_projections():
                 'league_id': league_id,
                 'sport': sport,
                 'player_name': player_name,
+                'is_player': is_likely_player_name(player_name),
                 'line': float(line_score),
                 'stat_type': attrs.get('stat_type', 'Unknown'),
             })
@@ -194,6 +265,7 @@ def get_all_projections():
             continue
     
     st.session_state.league_counts = league_counts
+    st.session_state.player_counts = player_counts
     return pd.DataFrame(projections)
 
 # ===================================================
@@ -202,16 +274,18 @@ def get_all_projections():
 
 current_time = get_central_time()
 
-st.markdown('<p class="main-header">📊 PrizePicks All Props</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🏀 PrizePicks Player Props</p>', unsafe_allow_html=True)
 
-# Status
-col1, col2 = st.columns(2)
+# Status and controls
+col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
     st.markdown(f"**Last Updated:** {current_time.strftime('%I:%M:%S %p CT')}")
 with col2:
     if st.button("🔄 Refresh Data"):
         st.cache_data.clear()
         st.rerun()
+with col3:
+    st.session_state.show_players_only = st.checkbox("👤 Show Players Only", value=True)
 
 # Load data
 with st.spinner("Loading props..."):
@@ -230,12 +304,13 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"**Total Props:** {len(df):,}")
     
-    # Show league distribution
+    # Show league distribution with player counts
     st.markdown("### 📊 League Distribution")
     if 'league_counts' in st.session_state:
-        for league_id, count in sorted(st.session_state.league_counts.items(), key=lambda x: x[1], reverse=True)[:15]:
+        for league_id, count in sorted(st.session_state.league_counts.items(), key=lambda x: x[1], reverse=True)[:20]:
             sport = LEAGUE_NAMES.get(league_id, f'League {league_id}')
-            st.write(f"**{sport}** (ID: {league_id}): {count}")
+            player_count = st.session_state.player_counts.get(league_id, 0)
+            st.write(f"**{sport}** (ID: {league_id}): {count} total ({player_count} players)")
 
 # Main content
 col_left, col_right = st.columns([1.3, 0.7])
@@ -253,42 +328,27 @@ with col_left:
         default=[]
     )
     
-    # Filter
+    # Apply filters
     filtered_df = df.copy()
     if selected_leagues:
         filtered_df = filtered_df[filtered_df['league_id'].isin(selected_leagues)]
     
-    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props**")
+    if st.session_state.show_players_only:
+        filtered_df = filtered_df[filtered_df['is_player'] == True]
+        st.markdown('<div class="filter-note">🔍 Showing only player names (hiding team props)</div>', unsafe_allow_html=True)
     
-    # Auto-select
+    # Show counts
+    total_in_filter = len(filtered_df)
+    players_in_filter = len(filtered_df[filtered_df['is_player'] == True]) if not st.session_state.show_players_only else total_in_filter
+    
+    st.caption(f"**Showing {total_in_filter} props ({players_in_filter} players)**")
+    
+    # Auto-select button (only from player props)
     if len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
-        if st.button("🤖 Auto-select best picks"):
-            for _, row in filtered_df.head(num_legs).iterrows():
-                st.session_state.picks.append({
-                    'sport': row['sport'],
-                    'player': row['player_name'],
-                    'stat': row['stat_type'],
-                    'line': row['line'],
-                    'league_id': row['league_id'],
-                })
-            st.rerun()
-    
-    # Display props
-    for idx, row in filtered_df.head(30).iterrows():
-        with st.container():
-            st.markdown(f"""
-            <div class='prop-card'>
-                <div style='display: flex; justify-content: space-between;'>
-                    <div>
-                        <strong>{row['player_name']}</strong>
-                        <span class='league-badge'>ID: {row['league_id']} | {row['sport']}</span>
-                    </div>
-                </div>
-                <div class='stat-line'>{row['stat_type']}: {row['line']:.1f}</div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("➕ Add to Entry", key=f"add_{idx}"):
-                if len(st.session_state.picks) < num_legs:
+        player_props = filtered_df[filtered_df['is_player'] == True]
+        if len(player_props) >= num_legs:
+            if st.button("🤖 Auto-select best players"):
+                for _, row in player_props.head(num_legs).iterrows():
                     st.session_state.picks.append({
                         'sport': row['sport'],
                         'player': row['player_name'],
@@ -296,7 +356,38 @@ with col_left:
                         'line': row['line'],
                         'league_id': row['league_id'],
                     })
-                    st.rerun()
+                st.rerun()
+    
+    # Display props
+    for idx, row in filtered_df.head(30).iterrows():
+        name_class = "player-name" if row['is_player'] else "team-name"
+        
+        with st.container():
+            st.markdown(f"""
+            <div class='prop-card'>
+                <div style='display: flex; justify-content: space-between; align-items: center;'>
+                    <div>
+                        <span class='{name_class}'>{row['player_name']}</span>
+                        <span class='league-badge'>{row['sport']}</span>
+                    </div>
+                </div>
+                <div class='stat-line'>{row['stat_type']}: {row['line']:.1f}</div>
+            """, unsafe_allow_html=True)
+            
+            # Only allow adding player props
+            if row['is_player']:
+                if st.button("➕ Add to Entry", key=f"add_{idx}"):
+                    if len(st.session_state.picks) < num_legs:
+                        st.session_state.picks.append({
+                            'sport': row['sport'],
+                            'player': row['player_name'],
+                            'stat': row['stat_type'],
+                            'line': row['line'],
+                            'league_id': row['league_id'],
+                        })
+                        st.rerun()
+            else:
+                st.markdown("🚫 Team prop (not selectable)")
             
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -308,7 +399,7 @@ with col_right:
             with st.container():
                 st.markdown(f"""
                 <div class='prop-card'>
-                    <div><strong>{pick['player']}</strong></div>
+                    <div><strong>{pick['player']}</strong> <span class='league-badge'>{pick['sport']}</span></div>
                     <div class='stat-line'>{pick['stat']}: {pick['line']:.1f}</div>
                 """, unsafe_allow_html=True)
                 
@@ -322,12 +413,13 @@ with col_right:
             st.session_state.picks = []
             st.rerun()
     else:
-        st.info("👆 Add props from the left panel")
+        st.info("👆 Add player props from the left panel")
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>📊 {len(df):,} total props | Showing league IDs as they appear in the API</p>
+    <p>🏀 {len(df):,} total props | {len(df[df['is_player']==True]):,} player props | 
+    <span style='color:#2E7D32;'>Players</span> / <span style='color:#FFA500;'>Teams</span></p>
 </div>
 """, unsafe_allow_html=True)
