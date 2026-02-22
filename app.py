@@ -14,9 +14,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better colors and visibility
+# Custom CSS for better visibility
 st.markdown("""
 <style>
+    /* Main header */
     .main-header {
         font-size: 2rem;
         font-weight: 700;
@@ -24,13 +25,53 @@ st.markdown("""
         margin-bottom: 0.5rem;
         text-align: center;
     }
-    .sub-header {
+    
+    /* Section headers */
+    .section-header {
         font-size: 1.5rem;
         font-weight: 600;
         color: #0D47A1;
         margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        border-bottom: 2px solid #1E88E5;
+        padding-bottom: 0.3rem;
     }
-    /* Better color scheme */
+    
+    /* Sport badges */
+    .sport-badge {
+        background-color: #E3F2FD;
+        color: #0D47A1;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        border: 1px solid #90CAF9;
+    }
+    
+    /* NBA specific badge */
+    .nba-badge {
+        background-color: #17408B;
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    /* NASCAR badge */
+    .nascar-badge {
+        background-color: #FFD700;
+        color: black;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    /* MORE badge - Green */
     .more-badge {
         background-color: #2E7D32;
         color: white;
@@ -40,8 +81,11 @@ st.markdown("""
         font-weight: bold;
         display: inline-block;
         text-align: center;
-        min-width: 60px;
+        min-width: 70px;
+        box-shadow: 0 2px 4px rgba(46, 125, 50, 0.3);
     }
+    
+    /* LESS badge - Red */
     .less-badge {
         background-color: #C62828;
         color: white;
@@ -51,27 +95,32 @@ st.markdown("""
         font-weight: bold;
         display: inline-block;
         text-align: center;
-        min-width: 60px;
+        min-width: 70px;
+        box-shadow: 0 2px 4px rgba(198, 40, 40, 0.3);
     }
+    
+    /* Hit rate colors */
     .hit-rate-high {
         color: #2E7D32;
         font-weight: 700;
-        font-size: 1rem;
+        font-size: 1.1rem;
+        background-color: #E8F5E9;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
+        display: inline-block;
     }
+    
     .hit-rate-low {
         color: #C62828;
         font-weight: 700;
-        font-size: 1rem;
-    }
-    .sport-badge {
-        background-color: #E1F5FE;
-        color: #01579B;
-        padding: 0.2rem 0.6rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
-        font-weight: 600;
+        font-size: 1.1rem;
+        background-color: #FFEBEE;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
         display: inline-block;
     }
+    
+    /* Injury badge */
     .injury-badge {
         background-color: #FF9800;
         color: white;
@@ -81,73 +130,98 @@ st.markdown("""
         font-weight: bold;
         display: inline-block;
     }
-    .stButton button {
-        width: 100%;
-        font-size: 0.9rem;
-        padding: 0.3rem;
-        border-radius: 0.5rem;
-    }
-    .pick-card {
-        background-color: #ffffff;
+    
+    /* Prop card */
+    .prop-card {
+        background-color: white;
         padding: 1rem;
         border-radius: 0.8rem;
-        border: 1px solid #e0e0e0;
+        border: 1px solid #E0E0E0;
         margin: 0.5rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        transition: transform 0.1s ease;
     }
-    .player-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
+    
+    .prop-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
     }
-    .player-info {
-        display: flex;
-        align-items: center;
-        gap: 0.8rem;
-        flex-wrap: wrap;
-    }
-    .player-name {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #0D47A1;
-    }
-    .player-stats {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-    .stat-line {
-        font-size: 1rem;
-        font-weight: 500;
-        color: #424242;
-    }
+    
+    /* Entry card */
     .entry-card {
-        background-color: #F5F5F5;
-        padding: 0.8rem;
+        background-color: #F8F9FA;
+        padding: 1rem;
         border-radius: 0.8rem;
         margin: 0.5rem 0;
         border-left: 4px solid #1E88E5;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+    
+    /* Summary box */
     .summary-box {
         background-color: #E3F2FD;
         padding: 1.2rem;
         border-radius: 0.8rem;
         border-left: 4px solid #1E88E5;
         margin: 1rem 0;
+        box-shadow: 0 2px 8px rgba(30, 136, 229, 0.2);
     }
+    
+    /* EV indicators */
     .positive-ev {
         color: #2E7D32;
         font-weight: bold;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+        background-color: #E8F5E9;
+        padding: 0.3rem 0.8rem;
+        border-radius: 2rem;
+        display: inline-block;
     }
+    
     .negative-ev {
         color: #C62828;
         font-weight: bold;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
+        background-color: #FFEBEE;
+        padding: 0.3rem 0.8rem;
+        border-radius: 2rem;
+        display: inline-block;
     }
+    
+    /* Buttons */
+    .stButton button {
+        width: 100%;
+        font-size: 0.9rem;
+        padding: 0.4rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        transition: all 0.1s ease;
+    }
+    
+    .stButton button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* Player name */
+    .player-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0D47A1;
+    }
+    
+    /* Stat line */
+    .stat-line {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #424242;
+        background-color: #F5F5F5;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.5rem;
+        display: inline-block;
+    }
+    
+    /* Footer */
     .footer {
         text-align: center;
         color: #666;
@@ -157,14 +231,15 @@ st.markdown("""
         background-color: #F5F5F5;
         border-radius: 0.5rem;
     }
+    
+    /* Mobile responsive */
     @media (max-width: 768px) {
-        .player-row {
+        .prop-card .row {
             flex-direction: column;
-            align-items: flex-start;
+            gap: 0.5rem;
         }
-        .player-stats {
-            width: 100%;
-            justify-content: space-between;
+        .player-name {
+            font-size: 1rem;
         }
     }
 </style>
@@ -189,20 +264,52 @@ if 'debug_mode' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# SPORT MAPPING
+# COMPLETE SPORT MAPPING - Based on actual league IDs
 # ===================================================
 
 SPORT_MAPPING = {
-    '4': {'name': 'NBA', 'emoji': '🏀'},
-    '1': {'name': 'MLB', 'emoji': '⚾'},
-    '2': {'name': 'NFL', 'emoji': '🏈'},
-    '3': {'name': 'NHL', 'emoji': '🏒'},
-    '5': {'name': 'Soccer', 'emoji': '⚽'},
-    '7': {'name': 'MMA', 'emoji': '🥊'},
-    '8': {'name': 'Tennis', 'emoji': '🎾'},
-    '6': {'name': 'Golf', 'emoji': '🏌️'},
-    '10': {'name': 'Esports', 'emoji': '🎮'},
-    'default': {'name': 'Other', 'emoji': '🏆'}
+    # Major Sports
+    '4': {'name': 'NBA', 'emoji': '🏀', 'badge_class': 'nba-badge'},
+    '1': {'name': 'MLB', 'emoji': '⚾', 'badge_class': 'sport-badge'},
+    '2': {'name': 'NFL', 'emoji': '🏈', 'badge_class': 'sport-badge'},
+    '3': {'name': 'NHL', 'emoji': '🏒', 'badge_class': 'sport-badge'},
+    '5': {'name': 'Soccer', 'emoji': '⚽', 'badge_class': 'sport-badge'},
+    '7': {'name': 'MMA', 'emoji': '🥊', 'badge_class': 'sport-badge'},
+    '8': {'name': 'Tennis', 'emoji': '🎾', 'badge_class': 'sport-badge'},
+    '6': {'name': 'Golf', 'emoji': '🏌️', 'badge_class': 'sport-badge'},
+    
+    # Racing (was being mislabeled as NBA)
+    '9': {'name': 'NASCAR', 'emoji': '🏎️', 'badge_class': 'nascar-badge'},
+    '21': {'name': 'F1', 'emoji': '🏎️', 'badge_class': 'nascar-badge'},
+    '22': {'name': 'NASCAR', 'emoji': '🏎️', 'badge_class': 'nascar-badge'},
+    
+    # Esports
+    '10': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '12': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '20': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '42': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '43': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '80': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '82': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '84': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '121': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '131': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '145': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '159': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '161': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '174': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '176': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '190': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '192': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '265': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '277': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '284': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '288': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '290': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '379': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    '383': {'name': 'Esports', 'emoji': '🎮', 'badge_class': 'sport-badge'},
+    
+    'default': {'name': 'Other', 'emoji': '🏆', 'badge_class': 'sport-badge'}
 }
 
 # ===================================================
@@ -239,7 +346,7 @@ def get_player_injury_status(player_name, injuries_dict):
 
 def calculate_projected_hit_rate(line, sport, injury_status):
     base_rates = {
-        'NBA': 0.48,
+        'NBA': 0.52,
         'NFL': 0.51,
         'MLB': 0.53,
         'NHL': 0.51,
@@ -248,6 +355,8 @@ def calculate_projected_hit_rate(line, sport, injury_status):
         'MMA': 0.49,
         'Tennis': 0.50,
         'Golf': 0.48,
+        'NASCAR': 0.50,
+        'F1': 0.50,
     }
     
     base_rate = base_rates.get(sport, 0.51)
@@ -326,8 +435,10 @@ def get_all_sports_projections():
             stat_type = attrs.get('stat_type') or 'Unknown'
             
             projections.append({
+                'league_id': league_id,
                 'sport': sport_info['name'],
                 'sport_emoji': sport_info['emoji'],
+                'badge_class': sport_info['badge_class'],
                 'player_name': player_name,
                 'line': float(line_score),
                 'stat_type': stat_type,
@@ -373,10 +484,8 @@ with st.spinner("Loading props from PrizePicks..."):
 if df.empty:
     st.error("No props loaded. Using sample data.")
     df = pd.DataFrame([
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Anthony Black', 'line': 16.5, 'stat_type': 'Points'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Cade Cunningham', 'line': 25.5, 'stat_type': 'Points'},
+        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'nba-badge', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
+        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'nba-badge', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
     ])
 
 # Add injury status and hit rates
@@ -401,7 +510,7 @@ if st.session_state.debug_mode:
 col_left, col_right = st.columns([1.3, 0.7])
 
 with col_left:
-    st.markdown('<p class="sub-header">📋 Available Props</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">📋 Available Props</p>', unsafe_allow_html=True)
     
     # Sport filter
     sports_list = sorted(df['sport'].unique())
@@ -424,6 +533,7 @@ with col_left:
             st.session_state.picks.append({
                 'sport_emoji': row['sport_emoji'],
                 'sport': row['sport'],
+                'badge_class': row['badge_class'],
                 'player': row['player_name'],
                 'stat': row['stat_type'],
                 'line': row['line'],
@@ -432,57 +542,61 @@ with col_left:
             })
         st.rerun()
     
-    # Display props - CLEAN VERSION WITH PROPER INFO
+    # Display props
     for idx, row in filtered_df.head(20).iterrows():
-        # Create the prop card with all information visible
         with st.container():
-            col1, col2, col3 = st.columns([2, 1, 1])
+            st.markdown('<div class="prop-card">', unsafe_allow_html=True)
             
+            # Player and sport row
+            col1, col2 = st.columns([3, 1])
             with col1:
-                st.markdown(f"**{row['sport_emoji']} {row['player_name']}**")
-                st.markdown(f"<span class='sport-badge'>{row['sport']}</span>", unsafe_allow_html=True)
+                st.markdown(f"<span class='player-name'>{row['sport_emoji']} {row['player_name']}</span>", unsafe_allow_html=True)
+                badge_class = row.get('badge_class', 'sport-badge')
+                st.markdown(f"<span class='{badge_class}'>{row['sport']}</span>", unsafe_allow_html=True)
                 if row['injury_status']['status'] != 'Active':
                     st.markdown(f"<span class='injury-badge'>{row['injury_status']['status']}</span>", unsafe_allow_html=True)
             
             with col2:
-                st.markdown(f"**{row['stat_type']}**")
-                st.markdown(f"{row['line']:.1f}")
+                hit_class = "hit-rate-high" if row['hit_rate'] > 0.5415 else "hit-rate-low"
+                st.markdown(f"<span class='{hit_class}'>{row['hit_rate']*100:.1f}%</span>", unsafe_allow_html=True)
             
-            with col3:
-                # Hit rate with color
-                hit_color = "hit-rate-high" if row['hit_rate'] > 0.5415 else "hit-rate-low"
-                st.markdown(f"<span class='{hit_color}'>{row['hit_rate']*100:.1f}%</span>", unsafe_allow_html=True)
-                
-                # Recommendation badge
+            # Stat line
+            st.markdown(f"<span class='stat-line'>{row['stat_type']}: {row['line']:.1f}</span>", unsafe_allow_html=True)
+            
+            # Recommendation and add button
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
                 if row['recommendation'] == 'MORE':
                     st.markdown("<span class='more-badge'>MORE</span>", unsafe_allow_html=True)
                 else:
                     st.markdown("<span class='less-badge'>LESS</span>", unsafe_allow_html=True)
             
-            # Add button
-            if st.button("➕ Add to Entry", key=f"add_{idx}", use_container_width=True):
-                if len(st.session_state.picks) < num_legs:
-                    st.session_state.picks.append({
-                        'sport_emoji': row['sport_emoji'],
-                        'sport': row['sport'],
-                        'player': row['player_name'],
-                        'stat': row['stat_type'],
-                        'line': row['line'],
-                        'pick': row['recommendation'],
-                        'hit_rate': row['hit_rate'],
-                    })
-                    st.rerun()
+            with col3:
+                if st.button("➕ Add", key=f"add_{idx}", use_container_width=True):
+                    if len(st.session_state.picks) < num_legs:
+                        st.session_state.picks.append({
+                            'sport_emoji': row['sport_emoji'],
+                            'sport': row['sport'],
+                            'badge_class': row['badge_class'],
+                            'player': row['player_name'],
+                            'stat': row['stat_type'],
+                            'line': row['line'],
+                            'pick': row['recommendation'],
+                            'hit_rate': row['hit_rate'],
+                        })
+                        st.rerun()
             
-            st.markdown("---")
+            st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
-    st.markdown('<p class="sub-header">📝 Your Entry</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">📝 Your Entry</p>', unsafe_allow_html=True)
     
     if st.session_state.picks:
         for i, pick in enumerate(st.session_state.picks):
             with st.container():
-                col1, col2 = st.columns([3, 1])
+                st.markdown('<div class="entry-card">', unsafe_allow_html=True)
                 
+                col1, col2 = st.columns([3, 1])
                 with col1:
                     st.markdown(f"**{pick['sport_emoji']} {pick['player']}**")
                     st.markdown(f"{pick['stat']} {pick['line']:.1f}")
@@ -490,15 +604,15 @@ with col_right:
                 
                 with col2:
                     if pick['pick'] == 'MORE':
-                        st.markdown("<span class='more-badge'>MORE</span>", unsafe_allow_html=True)
+                        st.markdown("<span class='more-badge' style='padding:0.2rem 0.5rem; font-size:0.8rem;'>MORE</span>", unsafe_allow_html=True)
                     else:
-                        st.markdown("<span class='less-badge'>LESS</span>", unsafe_allow_html=True)
+                        st.markdown("<span class='less-badge' style='padding:0.2rem 0.5rem; font-size:0.8rem;'>LESS</span>", unsafe_allow_html=True)
                     
                     if st.button("❌", key=f"remove_{i}"):
                         st.session_state.picks.pop(i)
                         st.rerun()
                 
-                st.markdown("---")
+                st.markdown('</div>', unsafe_allow_html=True)
         
         if len(st.session_state.picks) == num_legs:
             avg_hit = np.mean([p['hit_rate'] for p in st.session_state.picks])
@@ -517,11 +631,13 @@ with col_right:
                 
                 st.markdown(f"""
                 <div class='summary-box'>
-                    <h4 style='margin:0;'>🎯 Entry Summary</h4>
+                    <h4 style='margin:0 0 1rem 0;'>🎯 Entry Summary</h4>
                     <p><strong>Avg Hit Rate:</strong> {avg_hit*100:.1f}%</p>
                     <p><strong>Expected Return:</strong> ${ev:.2f}</p>
                     <p><strong>ROI:</strong> {roi:.1f}%</p>
-                    <p class='{"positive-ev" if roi>0 else "negative-ev"}'><strong>{'✅ +EV' if roi>0 else '⚠️ -EV'}</strong></p>
+                    <p class='{"positive-ev" if roi>0 else "negative-ev"}' style='margin-top:1rem;'>
+                        {'✅ +EV' if roi>0 else '⚠️ -EV'}
+                    </p>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -535,6 +651,8 @@ with col_right:
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} live props loaded | {len(df[df['recommendation']=='MORE']):,} MORE / {len(df[df['recommendation']=='LESS']):,} LESS recommendations</p>
+    <p>🏀 {len(df):,} live props loaded | 
+    <span style='color:#2E7D32; font-weight:bold;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
+    <span style='color:#C62828; font-weight:bold;'>{len(df[df['recommendation']=='LESS']):,} LESS</span> recommendations</p>
 </div>
 """, unsafe_allow_html=True)
