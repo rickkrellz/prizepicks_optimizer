@@ -35,7 +35,7 @@ st.markdown("""
         margin: 1rem 0;
     }
     
-    /* Sport badges - all with white text for readability */
+    /* Sport badges */
     .badge-mma { background-color: #D22B2B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-esports { background-color: #6A0DAD; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-boxing { background-color: #8B0000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
@@ -59,6 +59,7 @@ st.markdown("""
     .badge-unrivaled { background-color: #FF69B4; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-nhl { background-color: #000000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-mlbszn { background-color: #002D72; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-team { background-color: #9C27B0; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     
     /* MORE/LESS badges */
     .more-badge { background-color: #2E7D32; color: white; padding: 0.3rem 1rem; border-radius: 25px; font-weight: bold; font-size: 0.9rem; display: inline-block; min-width: 70px; text-align: center; }
@@ -68,7 +69,7 @@ st.markdown("""
     .hit-high { color: #2E7D32; font-weight: bold; font-size: 1.1rem; background-color: #E8F5E9; padding: 0.2rem 0.5rem; border-radius: 8px; }
     .hit-low { color: #C62828; font-weight: bold; font-size: 1.1rem; background-color: #FFEBEE; padding: 0.2rem 0.5rem; border-radius: 8px; }
     
-    /* Cards with better contrast */
+    /* Cards */
     .prop-card {
         background-color: #FFFFFF;
         padding: 1rem;
@@ -94,11 +95,16 @@ st.markdown("""
         color: #000000;
     }
     
-    /* Player name */
+    /* Player/Team name */
     .player-name {
         font-size: 1.2rem;
         font-weight: 700;
         color: #0D47A1;
+    }
+    .team-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #9C27B0;
     }
     
     /* Stat line */
@@ -215,6 +221,25 @@ SPORT_MAPPING = {
     'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
 
+# NBA team codes for better display
+NBA_TEAMS = {
+    'ATL': 'Hawks', 'BOS': 'Celtics', 'BKN': 'Nets', 'CHA': 'Hornets', 'CHI': 'Bulls',
+    'CLE': 'Cavaliers', 'DAL': 'Mavericks', 'DEN': 'Nuggets', 'DET': 'Pistons', 'GSW': 'Warriors',
+    'HOU': 'Rockets', 'IND': 'Pacers', 'LAC': 'Clippers', 'LAL': 'Lakers', 'MEM': 'Grizzlies',
+    'MIA': 'Heat', 'MIL': 'Bucks', 'MIN': 'Timberwolves', 'NO': 'Pelicans', 'NYK': 'Knicks',
+    'OKC': 'Thunder', 'ORL': 'Magic', 'PHI': '76ers', 'PHX': 'Suns', 'POR': 'Blazers',
+    'SAC': 'Kings', 'SA': 'Spurs', 'TOR': 'Raptors', 'UTA': 'Jazz', 'WAS': 'Wizards'
+}
+
+def format_player_name(name, sport):
+    """Format name to show team + full name for team props"""
+    # Check if it's a 3-letter team code
+    if len(name) == 3 and name.isupper():
+        if sport == 'NBA' and name in NBA_TEAMS:
+            return f"{name} {NBA_TEAMS[name]}"
+        return f"{name} Team"
+    return name
+
 # ===================================================
 # INJURY REPORT
 # ===================================================
@@ -283,7 +308,7 @@ def calculate_projected_hit_rate(line, sport, injury_status):
     else:
         line_factor = 1.02
     
-    # Injury adjustment
+    # Injury adjustment - only for players, not teams
     injury_factor = 1.0
     if injury_status['status'] == 'OUT':
         injury_factor = 0.3
@@ -350,12 +375,17 @@ def get_all_sports_projections():
             stat_type = attrs.get('stat_type') or 'Unknown'
             game_id = attrs.get('game_id', '')
             
+            # Check if this is a team prop (3-letter code)
+            is_team = len(player_name) == 3 and player_name.isupper()
+            
             projections.append({
                 'league_id': league_id,
                 'sport': sport_info['name'],
                 'sport_emoji': sport_info['emoji'],
                 'badge_class': sport_info['badge'],
                 'player_name': player_name,
+                'display_name': format_player_name(player_name, sport_info['name']),
+                'is_team': is_team,
                 'line': float(line_score),
                 'stat_type': stat_type,
                 'game_id': game_id,
@@ -371,8 +401,8 @@ def get_projections_with_fallback():
     if df.empty:
         # Sample data if API fails
         df = pd.DataFrame([
-            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL', 'league_id': '7'},
-            {'sport': 'NASCAR', 'sport_emoji': '🏎️', 'badge_class': 'badge-nascar', 'player_name': 'Kyle Busch', 'line': 5.5, 'stat_type': 'Fastest Laps', 'game_id': 'Autotrader 400', 'league_id': '4'},
+            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'display_name': 'Dillon Brooks', 'is_team': False, 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL', 'league_id': '7'},
+            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'CLE', 'display_name': 'CLE Cavaliers', 'is_team': True, 'line': 110.5, 'stat_type': 'Team Total', 'game_id': 'CLE vs DET', 'league_id': '7'},
         ])
     
     return df
@@ -412,8 +442,11 @@ if df.empty:
     st.error("No data loaded")
     st.stop()
 
-# Add injury status
-df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
+# Add injury status (only for players, not teams)
+df['injury_status'] = df.apply(
+    lambda row: {'status': 'Active'} if row['is_team'] else get_player_injury_status(row['player_name'], injuries_dict), 
+    axis=1
+)
 
 # Calculate hit rates
 df['hit_rate'] = df.apply(lambda row: calculate_projected_hit_rate(
@@ -423,6 +456,8 @@ df = df.sort_values('hit_rate', ascending=False)
 
 # Sidebar stats
 st.sidebar.markdown(f"**Loaded:** {len(df):,} props")
+st.sidebar.markdown(f"**Players:** {len(df[~df['is_team']]):,}")
+st.sidebar.markdown(f"**Teams:** {len(df[df['is_team']]):,}")
 st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
 
@@ -439,7 +474,7 @@ with col_left:
     
     # Sport filter
     sports_list = sorted(df['sport'].unique())
-    selected_sports = st.multiselect("Select Sports", sports_list, default=[])
+    selected_sports = st.multiselect("Select Sports", sports_list, default=['NBA'] if 'NBA' in sports_list else [])
     
     # Apply filters
     filtered_df = df.copy()
@@ -449,7 +484,7 @@ with col_left:
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
-    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props**")
+    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props ({len(filtered_df[filtered_df['is_team']])} team props)**")
     
     # Auto-select
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
@@ -459,6 +494,8 @@ with col_left:
                 'sport': row['sport'],
                 'badge_class': row['badge_class'],
                 'player': row['player_name'],
+                'display_name': row['display_name'],
+                'is_team': row['is_team'],
                 'stat': row['stat_type'],
                 'line': row['line'],
                 'pick': row['recommendation'],
@@ -467,17 +504,18 @@ with col_left:
         st.rerun()
     
     # Display props
-    for idx, row in filtered_df.head(20).iterrows():
+    for idx, row in filtered_df.head(30).iterrows():
         with st.container():
             hit_class = "hit-high" if row['hit_rate'] > 0.5415 else "hit-low"
             badge_class = row['badge_class']
+            name_class = "team-name" if row['is_team'] else "player-name"
             
             st.markdown(f"""
             <div class='prop-card'>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
                     <div>
-                        <span class='player-name'>{row['sport_emoji']} {row['player_name']}</span>
-                        <span class='{badge_class}' style='margin-left: 8px;'>{row['sport']}</span>
+                        <span class='{name_class}'>{row['sport_emoji']} {row['display_name']}</span>
+                        <span class='{badge_class}' style='margin-left: 8px;'>{row['sport']}{' TEAM' if row['is_team'] else ''}</span>
                     </div>
                     <span class='{hit_class}'>{row['hit_rate']*100:.1f}%</span>
                 </div>
@@ -497,6 +535,8 @@ with col_left:
                         'sport': row['sport'],
                         'badge_class': row['badge_class'],
                         'player': row['player_name'],
+                        'display_name': row['display_name'],
+                        'is_team': row['is_team'],
                         'stat': row['stat_type'],
                         'line': row['line'],
                         'pick': row['recommendation'],
@@ -512,10 +552,12 @@ with col_right:
     if st.session_state.picks:
         for i, pick in enumerate(st.session_state.picks):
             with st.container():
+                name_class = "team-name" if pick['is_team'] else "player-name"
+                
                 st.markdown(f"""
                 <div class='entry-card'>
                     <div style='display: flex; justify-content: space-between;'>
-                        <span><strong>{pick['sport_emoji']} {pick['player']}</strong></span>
+                        <span class='{name_class}'>{pick['sport_emoji']} {pick['display_name']}</span>
                         <span class='{"more-badge" if pick["pick"]=="MORE" else "less-badge"}' style='padding:0.2rem 0.8rem; font-size:0.8rem;'>
                             {pick['pick']}
                         </span>
@@ -571,7 +613,8 @@ st.markdown(f"""
 <div class='footer'>
     <p>🎯 {len(df):,} props loaded | 
     <span style='color:#2E7D32;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
-    <span style='color:#C62828;'>{len(df[df['recommendation']=='LESS']):,} LESS</span>
+    <span style='color:#C62828;'>{len(df[df['recommendation']=='LESS']):,} LESS</span> |
+    <span style='color:#9C27B0;'>{len(df[df['is_team']]):,} Team Props</span>
     </p>
 </div>
 """, unsafe_allow_html=True)
