@@ -4,11 +4,12 @@ import numpy as np
 import requests
 from datetime import datetime
 import time
+import random
 
 # Page config
 st.set_page_config(
-    page_title="PrizePicks Optimizer - All Sports",
-    page_icon="🏆",
+    page_title="PrizePicks Optimizer",
+    page_icon="🏀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -21,6 +22,7 @@ st.markdown("""
         font-weight: 700;
         color: #1E88E5;
         margin-bottom: 0.5rem;
+        text-align: center;
     }
     .sub-header {
         font-size: 1.3rem;
@@ -47,18 +49,19 @@ st.markdown("""
         background-color: #f0f2f6;
         padding: 0.2rem 0.5rem;
         border-radius: 1rem;
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         display: inline-block;
-        margin-right: 0.3rem;
+        margin-left: 0.3rem;
     }
     .injury-badge {
         background-color: #f44336;
         color: white;
         padding: 0.2rem 0.5rem;
         border-radius: 1rem;
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         font-weight: bold;
         display: inline-block;
+        margin-left: 0.3rem;
     }
     .stButton button {
         width: 100%;
@@ -71,20 +74,51 @@ st.markdown("""
         border-radius: 0.5rem;
         border: 1px solid #e0e0e0;
         margin: 0.5rem 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .debug-box {
-        background-color: #f0f0f0;
-        padding: 0.5rem;
-        border-radius: 0.3rem;
-        font-family: monospace;
-        font-size: 0.7rem;
-        max-height: 200px;
-        overflow: scroll;
-        margin: 0.5rem 0;
+    .player-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .player-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .player-stats {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .recommendation-badge {
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: bold;
+        min-width: 45px;
+        text-align: center;
+        display: inline-block;
+    }
+    .footer {
+        text-align: center;
+        color: #666;
+        font-size: 0.8rem;
+        margin-top: 2rem;
     }
     @media (max-width: 768px) {
-        .stCol {
-            min-width: auto !important;
+        .player-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .player-stats {
+            width: 100%;
+            justify-content: space-between;
         }
     }
 </style>
@@ -98,7 +132,7 @@ if 'entry_amount' not in st.session_state:
 if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
-    st.session_state.show_recommended = True
+    st.session_state.show_recommended = False
 if 'debug_mode' not in st.session_state:
     st.session_state.debug_mode = False
 
@@ -109,47 +143,20 @@ if 'debug_mode' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# SPORT MAPPING - Using the actual league IDs you found
+# SPORT MAPPING
 # ===================================================
 
 SPORT_MAPPING = {
-    # Major Sports
-    '4': {'name': 'NBA Basketball', 'emoji': '🏀'},
-    '1': {'name': 'MLB Baseball', 'emoji': '⚾'},
-    '2': {'name': 'NFL Football', 'emoji': '🏈'},
-    '3': {'name': 'NHL Hockey', 'emoji': '🏒'},
+    '4': {'name': 'NBA', 'emoji': '🏀'},
+    '1': {'name': 'MLB', 'emoji': '⚾'},
+    '2': {'name': 'NFL', 'emoji': '🏈'},
+    '3': {'name': 'NHL', 'emoji': '🏒'},
     '5': {'name': 'Soccer', 'emoji': '⚽'},
-    '7': {'name': 'MMA/UFC', 'emoji': '🥊'},
+    '7': {'name': 'MMA', 'emoji': '🥊'},
     '8': {'name': 'Tennis', 'emoji': '🎾'},
     '6': {'name': 'Golf', 'emoji': '🏌️'},
-    
-    # Esports / Gaming
     '10': {'name': 'Esports', 'emoji': '🎮'},
-    '12': {'name': 'Esports', 'emoji': '🎮'},
-    '20': {'name': 'Esports', 'emoji': '🎮'},
-    '42': {'name': 'Esports', 'emoji': '🎮'},
-    '43': {'name': 'Esports', 'emoji': '🎮'},
-    '80': {'name': 'Esports', 'emoji': '🎮'},
-    '82': {'name': 'Esports', 'emoji': '🎮'},
-    '84': {'name': 'Esports', 'emoji': '🎮'},
-    '121': {'name': 'Esports', 'emoji': '🎮'},
-    '131': {'name': 'Esports', 'emoji': '🎮'},
-    '145': {'name': 'Esports', 'emoji': '🎮'},
-    '159': {'name': 'Esports', 'emoji': '🎮'},
-    '161': {'name': 'Esports', 'emoji': '🎮'},
-    '174': {'name': 'Esports', 'emoji': '🎮'},
-    '176': {'name': 'Esports', 'emoji': '🎮'},
-    '190': {'name': 'Esports', 'emoji': '🎮'},
-    '192': {'name': 'Esports', 'emoji': '🎮'},
-    '265': {'name': 'Esports', 'emoji': '🎮'},
-    '277': {'name': 'Esports', 'emoji': '🎮'},
-    '284': {'name': 'Esports', 'emoji': '🎮'},
-    '288': {'name': 'Esports', 'emoji': '🎮'},
-    '290': {'name': 'Esports', 'emoji': '🎮'},
-    '379': {'name': 'Esports', 'emoji': '🎮'},
-    '383': {'name': 'Esports', 'emoji': '🎮'},
-    
-    'default': {'name': 'Other Sports', 'emoji': '🏆'}
+    'default': {'name': 'Other', 'emoji': '🏆'}
 }
 
 # ===================================================
@@ -183,40 +190,41 @@ def get_player_injury_status(player_name, injuries_dict):
 
 def calculate_projected_hit_rate(line, sport, injury_status):
     base_rates = {
-        'NBA Basketball': 0.52,
-        'NFL Football': 0.51,
-        'MLB Baseball': 0.53,
-        'NHL Hockey': 0.51,
+        'NBA': 0.48,
+        'NFL': 0.51,
+        'MLB': 0.53,
+        'NHL': 0.51,
         'Soccer': 0.50,
         'Esports': 0.52,
-        'MMA/UFC': 0.49,
+        'MMA': 0.49,
         'Tennis': 0.50,
         'Golf': 0.48,
     }
     
     base_rate = base_rates.get(sport, 0.51)
     
-    # Line adjustment
-    if line > 50:
-        line_factor = 0.95
+    if line > 30:
+        line_factor = 0.96
     elif line > 20:
         line_factor = 0.98
-    else:
+    elif line > 10:
         line_factor = 1.0
+    else:
+        line_factor = 1.02
     
-    # Injury adjustment
     injury_factor = 1.0
     if injury_status['status'] == 'OUT':
         injury_factor = 0.3
     elif injury_status['status'] == 'Questionable':
         injury_factor = 0.8
     
-    hit_rate = base_rate * line_factor * injury_factor
+    random_factor = random.uniform(0.98, 1.02)
+    
+    hit_rate = base_rate * line_factor * injury_factor * random_factor
     hit_rate = min(hit_rate, 0.75)
+    hit_rate = max(hit_rate, 0.25)
     
-    recommendation = "MORE" if hit_rate > 0.5415 else "LESS"
-    
-    return hit_rate, recommendation
+    return hit_rate
 
 # ===================================================
 # PRIZEPICKS API
@@ -248,7 +256,6 @@ def get_all_sports_projections():
         return pd.DataFrame()
     
     projections = []
-    league_counts = {}
     
     for item in data.get('data', []):
         try:
@@ -257,49 +264,35 @@ def get_all_sports_projections():
             if line_score is None:
                 continue
             
-            # Get player name
             player_name = (attrs.get('name') or attrs.get('description') or '').strip()
             if not player_name:
                 continue
             
-            # Get league ID
             league_id = 'default'
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
-                league_counts[league_id] = league_counts.get(league_id, 0) + 1
             
-            # Get sport info
             sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
-            
-            # Get stat type
             stat_type = attrs.get('stat_type') or 'Unknown'
             
             projections.append({
-                'league_id': league_id,
                 'sport': sport_info['name'],
                 'sport_emoji': sport_info['emoji'],
                 'player_name': player_name,
                 'line': float(line_score),
                 'stat_type': stat_type,
             })
-                
         except:
             continue
     
-    df = pd.DataFrame(projections)
-    
-    # Store league counts in session state for debugging
-    st.session_state.league_counts = league_counts
-    st.session_state.raw_sports = df['sport'].value_counts().to_dict() if not df.empty else {}
-    
-    return df
+    return pd.DataFrame(projections)
 
 # ===================================================
 # MAIN APP
 # ===================================================
 
-st.markdown('<p class="main-header">🏆 PrizePicks Optimizer</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🏀 PrizePicks Optimizer</p>', unsafe_allow_html=True)
 st.markdown(f"**Last Updated:** {datetime.now().strftime('%I:%M:%S %p')}")
 
 # Sidebar
@@ -311,18 +304,47 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🤖 Auto Features")
     st.session_state.auto_select = st.checkbox("Auto-select best picks", value=True)
-    st.session_state.show_recommended = st.checkbox("Show only recommended picks", value=True)
+    st.session_state.show_recommended = st.checkbox("Show only recommended ( >54.15%)", value=False)
     
     st.markdown("---")
     st.markdown("### 📊 6-Leg Flex")
     st.markdown("**Break-even:** 54.15% per pick")
     
-    # Debug toggle
     st.session_state.debug_mode = st.checkbox("🔧 Debug Mode", value=False)
     
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
+
+# Load data
+with st.spinner("Loading props from PrizePicks..."):
+    df = get_all_sports_projections()
+    injuries_dict = fetch_injury_report()
+
+if df.empty:
+    st.error("No props loaded. Using sample data.")
+    df = pd.DataFrame([
+        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
+        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
+    ])
+
+# Add injury status and hit rates
+df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
+df['hit_rate'] = df.apply(lambda row: calculate_projected_hit_rate(row['line'], row['sport'], row['injury_status']), axis=1)
+df['recommendation'] = df['hit_rate'].apply(lambda x: 'MORE' if x > 0.5415 else 'LESS')
+df = df.sort_values('hit_rate', ascending=False)
+
+# Sidebar stats
+st.sidebar.markdown(f"**Loaded:** {len(df):,} props")
+st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
+st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
+
+# Debug view
+if st.session_state.debug_mode:
+    with st.sidebar.expander("📊 Sport Breakdown"):
+        for sport, count in df['sport'].value_counts().items():
+            more = len(df[(df['sport']==sport) & (df['recommendation']=='MORE')])
+            st.write(f"{sport}: {count} ({more} MORE)")
 
 # Main content
 col_left, col_right = st.columns([1.3, 0.7])
@@ -330,68 +352,22 @@ col_left, col_right = st.columns([1.3, 0.7])
 with col_left:
     st.markdown('<p class="sub-header">📋 Available Props</p>', unsafe_allow_html=True)
     
-    with st.spinner("Loading props from PrizePicks..."):
-        df = get_all_sports_projections()
-        injuries_dict = fetch_injury_report()
-    
-    if df.empty:
-        st.error("No props loaded. Using sample data.")
-        df = pd.DataFrame([
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
-        ])
-    
-    # Add injury status and hit rates
-    df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
-    
-    hit_results = df.apply(lambda row: calculate_projected_hit_rate(
-        row['line'], row['sport'], row['injury_status']), axis=1)
-    
-    df['hit_rate'] = [hr[0] for hr in hit_results]
-    df['recommendation'] = [hr[1] for hr in hit_results]
-    
-    # Sort by hit rate
-    df = df.sort_values('hit_rate', ascending=False)
-    
-    # Show total count
-    st.sidebar.success(f"✅ Loaded {len(df):,} props from PrizePicks")
-    
-    # DEBUG VIEW - Show what sports are actually in the data
-    if st.session_state.debug_mode:
-        with st.expander("🔍 Debug: Actual Sports in Data", expanded=True):
-            st.write("**Sports found in data:**")
-            sport_counts = df['sport'].value_counts()
-            for sport, count in sport_counts.head(10).items():
-                st.write(f"  • {sport}: {count:,} props")
-            if len(sport_counts) > 10:
-                st.write(f"  ... and {len(sport_counts)-10} more sports")
-    
-    # Sport filter - Use actual sport names from the data
+    # Sport filter
     sports_list = sorted(df['sport'].unique())
-    
-    # Show what's available
-    st.caption(f"**{len(sports_list)} sports available**")
-    
-    selected_sports = st.multiselect(
-        "Select Sports", 
-        sports_list,
-        default=[s for s in sports_list if 'NBA' in s or 'Basketball' in s][:1] if any('NBA' in s for s in sports_list) else []
-    )
+    default_sports = ['NBA'] if 'NBA' in sports_list else []
+    selected_sports = st.multiselect("Select Sports", sports_list, default=default_sports)
     
     # Apply filters
     filtered_df = df.copy()
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
-        st.caption(f"**Showing {len(filtered_df):,} of {len(df):,} total props**")
-    else:
-        st.info("👆 Select sports above to view props")
-        filtered_df = pd.DataFrame()
     
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
-        st.caption(f"**After recommended filter: {len(filtered_df):,} props**")
     
-    # Auto-select if enabled
+    st.caption(f"**Showing {len(filtered_df):,} of {len(df):,} total props**")
+    
+    # Auto-select
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
         for _, row in filtered_df.head(num_legs).iterrows():
             st.session_state.picks.append({
@@ -402,82 +378,67 @@ with col_left:
                 'line': row['line'],
                 'pick': row['recommendation'],
                 'hit_rate': row['hit_rate'],
-                'injury': row['injury_status']['status'],
             })
         st.rerun()
     
-    # Display props
-    if not filtered_df.empty:
-        for idx, row in filtered_df.head(20).iterrows():
-            hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
-            badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
-            
-            injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>" if row['injury_status']['status'] != 'Active' else ""
-            
-            st.markdown(f"""
-            <div class='pick-card'>
-                <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
-                    <div style='display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;'>
-                        <span style='font-size: 1.2rem;'>{row['sport_emoji']}</span>
-                        <span><strong>{row['player_name']}</strong></span>
-                        <span class='sport-badge'>{row['sport']}</span>
-                        {injury_badge}
-                    </div>
-                    <div style='display: flex; align-items: center; gap: 0.5rem;'>
-                        <span>{row['stat_type']} {row['line']}</span>
-                        <span class='{hit_color}' style='font-weight: bold;'>{row['hit_rate']*100:.1f}%</span>
-                        <span style='background-color: {badge_color}; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; min-width: 45px; text-align: center;'>
-                            {row['recommendation']}
-                        </span>
-                    </div>
+    # Display props - CLEAN VERSION
+    for idx, row in filtered_df.head(20).iterrows():
+        hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
+        badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
+        
+        st.markdown(f"""
+        <div class='pick-card'>
+            <div class='player-row'>
+                <div class='player-info'>
+                    <span style='font-size: 1.2rem;'>{row['sport_emoji']}</span>
+                    <span><strong>{row['player_name']}</strong></span>
+                    <span class='sport-badge'>{row['sport']}</span>
+                </div>
+                <div class='player-stats'>
+                    <span>{row['stat_type']} {row['line']:.1f}</span>
+                    <span class='{hit_color}' style='font-weight: bold;'>{row['hit_rate']*100:.1f}%</span>
+                    <span class='recommendation-badge' style='background-color: {badge_color};'>
+                        {row['recommendation']}
+                    </span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                pick = st.selectbox("Pick", ["MORE", "LESS"], 
-                                   index=0 if row['recommendation'] == "MORE" else 1,
-                                   key=f"pick_{idx}", label_visibility="collapsed")
-            with col2:
-                if st.button("➕ Add", key=f"add_{idx}", use_container_width=True):
-                    if len(st.session_state.picks) < num_legs:
-                        st.session_state.picks.append({
-                            'sport_emoji': row['sport_emoji'],
-                            'sport': row['sport'],
-                            'player': row['player_name'],
-                            'stat': row['stat_type'],
-                            'line': row['line'],
-                            'pick': pick,
-                            'hit_rate': row['hit_rate'],
-                            'injury': row['injury_status']['status'],
-                        })
-                        st.rerun()
-    else:
-        if selected_sports:
-            st.warning(f"No props found for selected sports. Try different sports.")
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Show sample of what's available
-        if st.session_state.debug_mode:
-            st.markdown('<div class="debug-box">', unsafe_allow_html=True)
-            st.write("Sample of available data:")
-            st.write(df[['sport', 'player_name', 'stat_type']].head(10))
-            st.markdown('</div>', unsafe_allow_html=True)
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            pick = st.selectbox(
+                "Pick",
+                ["MORE", "LESS"],
+                index=0 if row['recommendation'] == "MORE" else 1,
+                key=f"pick_{idx}",
+                label_visibility="collapsed"
+            )
+        with col2:
+            if st.button("➕ Add", key=f"add_{idx}", use_container_width=True):
+                if len(st.session_state.picks) < num_legs:
+                    st.session_state.picks.append({
+                        'sport_emoji': row['sport_emoji'],
+                        'sport': row['sport'],
+                        'player': row['player_name'],
+                        'stat': row['stat_type'],
+                        'line': row['line'],
+                        'pick': pick,
+                        'hit_rate': row['hit_rate'],
+                    })
+                    st.rerun()
 
 with col_right:
     st.markdown('<p class="sub-header">📝 Your Entry</p>', unsafe_allow_html=True)
     
     if st.session_state.picks:
         for i, pick in enumerate(st.session_state.picks):
-            injury_badge = f"<span class='injury-badge'>{pick['injury']}</span>" if pick['injury'] != 'Active' else ""
-            
             st.markdown(f"""
             <div class='pick-card'>
                 <div style='display: flex; justify-content: space-between;'>
                     <span><strong>{pick['sport_emoji']} {pick['player']}</strong></span>
-                    {injury_badge}
                 </div>
-                <div><span style='font-weight: bold; color: {"#4CAF50" if pick["pick"]=="MORE" else "#f44336"};'>{pick['pick']}</span> {pick['stat']} {pick['line']}</div>
+                <div><span style='font-weight: bold; color: {"#4CAF50" if pick["pick"]=="MORE" else "#f44336"};'>{pick['pick']}</span> {pick['stat']} {pick['line']:.1f}</div>
                 <div style='font-size: 0.9rem;'>Hit rate: {pick['hit_rate']*100:.1f}%</div>
             </div>
             """, unsafe_allow_html=True)
@@ -520,7 +481,7 @@ with col_right:
 # Footer
 st.markdown("---")
 st.markdown(f"""
-<div style='text-align: center; color: #666; font-size: 0.8rem;'>
-    <p>🏆 {len(df):,} live props loaded | Enable Debug Mode to see available sports</p>
+<div class='footer'>
+    <p>🏀 {len(df):,} live props loaded | {len(df[df['recommendation']=='MORE']):,} MORE / {len(df[df['recommendation']=='LESS']):,} LESS</p>
 </div>
 """, unsafe_allow_html=True)
