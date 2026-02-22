@@ -6,7 +6,6 @@ from datetime import datetime
 import time
 import random
 import pytz
-import re
 
 # Page config
 st.set_page_config(
@@ -72,6 +71,8 @@ st.markdown("""
     .badge-soccer { background-color: #006400; }
     .badge-pga { background-color: #0A4C33; }
     .badge-esports { background-color: #4B0082; }
+    .badge-nascar { background-color: #8B4513; }
+    .badge-unrivaled { background-color: #FF69B4; }
     .badge-other { background-color: #555555; }
     
     .more-badge {
@@ -186,14 +187,18 @@ if 'show_recommended' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE LEAGUE ID MAPPING
+# CORRECT LEAGUE ID MAPPING - Based on your data
 # ===================================================
 
 LEAGUE_MAPPING = {
     # NBA
     '7': 'NBA',
     '192': 'NBA',
-    '4': 'NBA',  # NASCAR is '4', but we'll override for NBA names
+    
+    # NASCAR (THIS WAS THE ISSUE - '4' is NASCAR, not NBA)
+    '4': 'NASCAR',
+    '9': 'NASCAR',
+    '22': 'NASCAR',
     
     # NHL
     '8': 'NHL',
@@ -246,83 +251,47 @@ LEAGUE_MAPPING = {
 }
 
 # ===================================================
-# FILTER OUT ONLY TEAM PROPS - Keep all player names
+# FILTER OUT TEAM PROPS
 # ===================================================
 
-# Things to filter out (team props, quarter props, etc)
-FILTER_OUT = [
-    # Quarter indicators
-    '1Q', '2Q', '3Q', '4Q', '1H', '2H',
-    
-    # Team abbreviations (NBA, NHL, MLB)
-    'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
-    'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
-    'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS',
-    'ANA', 'ARI', 'BUF', 'CGY', 'CAR', 'CBJ', 'EDM', 'FLA', 'LAK', 'MTL', 'NSH', 'NJD',
-    'NYI', 'NYR', 'OTT', 'PIT', 'SJS', 'SEA', 'STL', 'TBL', 'VAN', 'VGK', 'WPG',
-    'ARI', 'BAL', 'CHC', 'CIN', 'COL', 'CWS', 'DET', 'HOU', 'KC', 'LAA', 'LAD', 'MIA',
-    'MIL', 'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SD', 'SF', 'SEA', 'STL', 'TB',
-    'TEX', 'TOR', 'WSH',
-    
-    # Season patterns
-    'SZN', '2026',
-    
-    # Common team patterns
-    ' FC', ' United', ' City', ' Rovers', ' County', ' Albion', ' Athletic',
-    ' Wanderers', ' Town', ' Forest', ' Villa', ' Palace', ' Hotspur', ' Ham',
-    ' North End', ' Orient', ' Vale', ' Dale', ' Star',
-]
-
-# Known soccer teams to filter
-SOCCER_TEAMS = [
-    'Pumas', 'America', 'Chivas', 'Tigres', 'Monterrey', 'Cruz Azul', 'Leon', 'Pachuca',
-    'Toluca', 'Santos', 'Juarez', 'Atlas', 'Queretaro', 'Mazatlan', 'Puebla', 'Necaxa',
-    'Tijuana', 'San Luis', 'Liverpool', 'Manchester', 'Chelsea', 'Arsenal', 'Tottenham',
-    'Newcastle', 'Leicester', 'Everton', 'Wolves', 'West Ham', 'Aston Villa', 'Brighton',
-    'Brentford', 'Fulham', 'Crystal Palace', 'Bournemouth', 'Nottingham',
-]
-
-# Golf tournaments
-GOLF_EVENTS = [
-    'Riviera', 'Pebble Beach', 'Augusta', 'Masters', 'PGA', 'Open',
-]
-
 def is_player_name(name):
-    """Keep player names, filter out team props"""
+    """Keep real player names, filter out team props"""
     if not name or len(name) < 3:
         return False
     
-    # Check for quarter props
-    for q in ['1Q', '2Q', '3Q', '4Q', '1H', '2H']:
+    # NASCAR races (keep these - they're not players, but we want them in NASCAR category)
+    if 'Autotrader 400' in name or 'Daytona' in name or 'Martinsville' in name:
+        return True  # These are NASCAR events, not players but we want to show them
+    
+    # Filter out quarter props
+    quarter_indicators = ['1Q', '2Q', '3Q', '4Q', '1H', '2H']
+    for q in quarter_indicators:
         if q in name:
             return False
     
-    # Check for team abbreviations
-    if name.upper() in FILTER_OUT:
+    # Filter out team abbreviations
+    team_abbrevs = [
+        'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
+        'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
+        'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS',
+        'ANA', 'ARI', 'BUF', 'CGY', 'CAR', 'CBJ', 'EDM', 'FLA', 'LAK', 'MTL', 'NSH', 'NJD',
+        'NYI', 'NYR', 'OTT', 'PIT', 'SJS', 'SEA', 'STL', 'TBL', 'VAN', 'VGK', 'WPG',
+    ]
+    if name.upper() in team_abbrevs:
         return False
     
-    # Check for soccer teams
-    for team in SOCCER_TEAMS:
+    # Filter out soccer teams
+    soccer_teams = ['Pumas', 'America', 'Chivas', 'Tigres', 'Monterrey', 'Cruz Azul', 
+                    'Leon', 'Pachuca', 'Toluca', 'Santos', 'Juarez', 'Atlas']
+    for team in soccer_teams:
         if team.lower() in name.lower():
             return False
     
-    # Check for golf events
-    for event in GOLF_EVENTS:
-        if event.lower() in name.lower():
-            return False
-    
-    # Check for season patterns
+    # Filter out season patterns
     if 'SZN' in name or '2026' in name:
         return False
     
-    # Check for common team patterns
-    name_lower = name.lower()
-    patterns = [' fc', ' united', ' city', ' rovers', ' county', ' athletic', ' town']
-    for pattern in patterns:
-        if pattern in name_lower:
-            return False
-    
-    # Keep everything else - this includes NBA players
+    # Keep everything else - this includes NBA player names
     return True
 
 # ===================================================
@@ -351,7 +320,7 @@ def fetch_prizepicks_projections():
 
 @st.cache_data(ttl=300)
 def get_player_projections():
-    """Get player props only"""
+    """Get all props, properly categorized"""
     data = fetch_prizepicks_projections()
     
     if not data:
@@ -359,14 +328,7 @@ def get_player_projections():
         return pd.DataFrame([
             {'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points', 'league_id': '7'},
             {'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points', 'league_id': '7'},
-            {'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points', 'league_id': '7'},
-            {'player_name': 'Giannis Antetokounmpo', 'line': 32.5, 'stat_type': 'PRA', 'league_id': '7'},
-            {'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA', 'league_id': '7'},
-            {'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points', 'league_id': '8'},
-            {'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals', 'league_id': '8'},
-            {'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals', 'league_id': '6'},
-            {'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score', 'league_id': '131'},
-            {'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games', 'league_id': '5'},
+            {'player_name': 'Kyle Busch', 'line': 5.5, 'stat_type': 'Fastest Laps', 'league_id': '4'},
         ])
     
     projections = []
@@ -391,7 +353,7 @@ def get_player_projections():
                 league_id = str(league_rel.get('id', 'default'))
                 league_counts[league_id] = league_counts.get(league_id, 0) + 1
             
-            # Filter out team props
+            # Filter out team props (but keep NASCAR events)
             if not is_player_name(player_name):
                 filtered_count += 1
                 continue
@@ -399,21 +361,21 @@ def get_player_projections():
             # Get sport from mapping
             sport = LEAGUE_MAPPING.get(league_id, 'Other')
             
-            # Special case: If it's a golf event name, put in Golf
-            if any(event.lower() in player_name.lower() for event in GOLF_EVENTS):
-                sport = 'Golf'
-            
-            # Get emoji and badge
+            # Emoji mapping
             emoji_map = {
                 'NBA': '🏀', 'NHL': '🏒', 'MLB': '⚾', 'Tennis': '🎾',
                 'Golf': '⛳', 'Soccer': '⚽', 'MMA': '🥊', 'Boxing': '🥊',
                 'Esports': '🎮', 'Handball': '🤾', 'Curling': '🥌',
-                'Olympic Hockey': '🏒', 'Unrivaled': '🏀', 'Other': '🏆'
+                'NASCAR': '🏎️', 'Olympic Hockey': '🏒', 'Unrivaled': '🏀',
+                'Other': '🏆'
             }
+            
+            # Badge mapping
             badge_map = {
                 'NBA': 'badge-nba', 'NHL': 'badge-nhl', 'MLB': 'badge-mlb',
                 'Tennis': 'badge-tennis', 'Golf': 'badge-pga', 'Soccer': 'badge-soccer',
-                'Esports': 'badge-esports', 'Other': 'badge-other'
+                'Esports': 'badge-esports', 'NASCAR': 'badge-nascar',
+                'Unrivaled': 'badge-unrivaled', 'Other': 'badge-other'
             }
             
             projections.append({
@@ -449,6 +411,7 @@ def calculate_hit_rate(line, sport):
         'MMA': 0.49,
         'Boxing': 0.49,
         'Esports': 0.52,
+        'NASCAR': 0.50,
     }
     
     base_rate = base_rates.get(sport, 0.51)
@@ -502,11 +465,11 @@ with st.sidebar:
         st.rerun()
 
 # Load data
-with st.spinner("Loading player props..."):
+with st.spinner("Loading props..."):
     df = get_player_projections()
 
 if df.empty:
-    st.error("No player props loaded")
+    st.error("No data loaded")
     st.stop()
 
 # Calculate hit rates
@@ -515,7 +478,7 @@ df['recommendation'] = df['hit_rate'].apply(lambda x: 'MORE' if x > 0.5415 else 
 df = df.sort_values('hit_rate', ascending=False)
 
 # Sidebar stats
-st.sidebar.markdown(f"**Player Props:** {len(df):,}")
+st.sidebar.markdown(f"**Total Props:** {len(df):,}")
 st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
 if 'filtered_count' in st.session_state:
@@ -523,7 +486,6 @@ if 'filtered_count' in st.session_state:
 
 # Show sports breakdown
 with st.sidebar.expander("📊 Sports", expanded=True):
-    # Get all sports that actually have props
     sport_counts = df['sport'].value_counts()
     for sport in sorted(df['sport'].unique()):
         count = sport_counts[sport]
@@ -532,7 +494,7 @@ with st.sidebar.expander("📊 Sports", expanded=True):
 # Show league distribution (debug)
 with st.sidebar.expander("🔍 League IDs", expanded=False):
     if 'league_counts' in st.session_state:
-        for league_id, count in sorted(st.session_state.league_counts.items(), key=lambda x: x[1], reverse=True)[:10]:
+        for league_id, count in sorted(st.session_state.league_counts.items(), key=lambda x: x[1], reverse=True)[:15]:
             sport = LEAGUE_MAPPING.get(league_id, 'Unknown')
             st.write(f"**{league_id}** ({sport}): {count}")
 
@@ -540,7 +502,7 @@ with st.sidebar.expander("🔍 League IDs", expanded=False):
 col_left, col_right = st.columns([1.3, 0.7])
 
 with col_left:
-    st.markdown('<p class="section-header">📋 Available Player Props</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">📋 Available Props</p>', unsafe_allow_html=True)
     
     # Sport filter
     sports_list = sorted(df['sport'].unique())
@@ -554,7 +516,7 @@ with col_left:
     if st.session_state.show_recommended:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
-    st.caption(f"**Showing {len(filtered_df)} of {len(df)} player props**")
+    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props**")
     
     # Auto-select
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
@@ -667,13 +629,13 @@ with col_right:
             st.session_state.picks = []
             st.rerun()
     else:
-        st.info("👆 Add player props from the left panel")
+        st.info("👆 Add props from the left panel")
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} player props | 
+    <p>🏀 {len(df):,} props | 
     <span style='color:#2E7D32;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
     <span style='color:#C62828;'>{len(df[df['recommendation']=='LESS']):,} LESS</span>
     </p>
