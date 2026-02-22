@@ -36,30 +36,29 @@ st.markdown("""
     }
     
     /* Sport badges - all with white text for readability */
-    .badge-nba { background-color: #17408B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-nhl { background-color: #000000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-mlb { background-color: #041E42; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-nfl { background-color: #013369; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-pga { background-color: #0A4C33; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-mma { background-color: #D22B2B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-esports { background-color: #6A0DAD; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-boxing { background-color: #8B0000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-olympics { background-color: #FF8C00; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-cbb { background-color: #FF4500; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-nascar { background-color: #FFD700; color: black; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-cbb1h { background-color: #FF8C00; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-nba4q { background-color: #17408B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-tabletennis { background-color: #708090; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-golf { background-color: #708090; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-tennis { background-color: #FFC72C; color: black; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-cs2 { background-color: #A52A2A; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-lol { background-color: #4B0082; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-cod { background-color: #2F4F4F; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-val { background-color: #DC143C; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-dota2 { background-color: #483D8B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-rl { background-color: #228B22; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-curling { background-color: #00CED1; color: black; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-ohockey { background-color: #000000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-pga { background-color: #0A4C33; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-mlb { background-color: #041E42; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-nba { background-color: #17408B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-nba1q { background-color: #6A5ACD; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     .badge-handball { background-color: #CD5C5C; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-tt { background-color: #708090; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-other { background-color: #757575; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-unknown { background-color: #FF0000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    
-    /* Quarter/Half badges */
-    .badge-1q { background-color: #FF6B6B; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-2h { background-color: #4ECDC4; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
-    .badge-1h { background-color: #45B7D1; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-rl { background-color: #228B22; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-nascar { background-color: #FFD700; color: black; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-unrivaled { background-color: #FF69B4; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-nhl { background-color: #000000; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .badge-mlbszn { background-color: #002D72; color: white; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
     
     /* MORE/LESS badges */
     .more-badge { background-color: #2E7D32; color: white; padding: 0.3rem 1rem; border-radius: 25px; font-weight: bold; font-size: 0.9rem; display: inline-block; min-width: 70px; text-align: center; }
@@ -93,16 +92,6 @@ st.markdown("""
         border-radius: 10px;
         margin: 1rem 0;
         color: #000000;
-    }
-    
-    /* Debug section */
-    .debug-box {
-        background-color: #f0f0f0;
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-        border-left: 4px solid #FF5722;
-        font-family: monospace;
     }
     
     /* Player name */
@@ -151,10 +140,6 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
-if 'debug_mode' not in st.session_state:
-    st.session_state.debug_mode = True  # Turn debug on by default
-if 'raw_data' not in st.session_state:
-    st.session_state.raw_data = None
 
 # ===================================================
 # THE-ODDS-API KEY
@@ -163,13 +148,71 @@ if 'raw_data' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# INITIAL SPORT MAPPING - Will be updated based on debug
+# COMPLETE SPORT MAPPING - Based on your CSV export
 # ===================================================
 
 SPORT_MAPPING = {
-    # We'll start with a basic mapping and let debug show us the rest
-    '4': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    'default': {'name': 'Unknown', 'emoji': '❓', 'badge': 'badge-unknown'}
+    # MMA/UFC
+    '12': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
+    
+    # Esports / Gaming
+    '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '265': {'name': 'CS2', 'emoji': '🎮', 'badge': 'badge-cs2'},
+    '121': {'name': 'LoL', 'emoji': '🎮', 'badge': 'badge-lol'},
+    '174': {'name': 'CS2', 'emoji': '🎮', 'badge': 'badge-cs2'},
+    '159': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '161': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '145': {'name': 'RL', 'emoji': '🎮', 'badge': 'badge-rl'},
+    
+    # Boxing
+    '42': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-boxing'},
+    
+    # College Basketball
+    '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
+    '290': {'name': 'CBB 1H', 'emoji': '🏀', 'badge': 'badge-cbb1h'},
+    
+    # NBA Quarters
+    '149': {'name': 'NBA 4Q', 'emoji': '🏀', 'badge': 'badge-nba4q'},
+    '192': {'name': 'NBA 1Q', 'emoji': '🏀', 'badge': 'badge-nba1q'},
+    
+    # Table Tennis
+    '286': {'name': 'Table Tennis', 'emoji': '🏓', 'badge': 'badge-tabletennis'},
+    
+    # Golf
+    '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-golf'},
+    '1': {'name': 'PGA', 'emoji': '⛳', 'badge': 'badge-pga'},
+    
+    # Tennis
+    '5': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-tennis'},
+    
+    # Curling
+    '277': {'name': 'Curling', 'emoji': '🥌', 'badge': 'badge-curling'},
+    
+    # Olympic Hockey
+    '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-ohockey'},
+    
+    # MLB
+    '43': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # NBA
+    '7': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # Handball
+    '284': {'name': 'Handball', 'emoji': '🤾', 'badge': 'badge-handball'},
+    
+    # NASCAR
+    '4': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
+    
+    # Unrivaled Basketball
+    '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-unrivaled'},
+    
+    # NHL
+    '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
+    
+    # MLB Season
+    '190': {'name': 'MLB SZN', 'emoji': '⚾', 'badge': 'badge-mlbszn'},
+    
+    'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
 
 # ===================================================
@@ -204,12 +247,28 @@ def get_player_injury_status(player_name, injuries_dict):
 def calculate_projected_hit_rate(line, sport, injury_status):
     base_rates = {
         'NBA': 0.52,
+        'NBA 1Q': 0.50,
+        'NBA 4Q': 0.50,
         'NHL': 0.51,
         'MLB': 0.53,
+        'MLB SZN': 0.53,
+        'CBB': 0.51,
+        'CBB 1H': 0.50,
         'PGA': 0.48,
+        'Golf': 0.48,
         'NASCAR': 0.50,
+        'MMA': 0.49,
+        'Boxing': 0.49,
         'CS2': 0.52,
         'LoL': 0.52,
+        'Esports': 0.52,
+        'RL': 0.52,
+        'Tennis': 0.50,
+        'Handball': 0.50,
+        'Table Tennis': 0.50,
+        'Curling': 0.50,
+        'Olympic Hockey': 0.51,
+        'Unrivaled': 0.50,
     }
     
     base_rate = base_rates.get(sport, 0.51)
@@ -257,9 +316,7 @@ def fetch_prizepicks_projections():
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
-            data = response.json()
-            st.session_state.raw_data = data
-            return data
+            return response.json()
         return None
     except:
         return None
@@ -272,7 +329,6 @@ def get_all_sports_projections():
         return pd.DataFrame()
     
     projections = []
-    league_stats = {}
     
     for item in data.get('data', []):
         try:
@@ -289,17 +345,6 @@ def get_all_sports_projections():
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
-                
-                # Track league stats
-                if league_id not in league_stats:
-                    league_stats[league_id] = {'count': 0, 'samples': []}
-                league_stats[league_id]['count'] += 1
-                if len(league_stats[league_id]['samples']) < 5:
-                    league_stats[league_id]['samples'].append({
-                        'player': player_name[:30],
-                        'game': attrs.get('game_id', 'Unknown')[:30],
-                        'stat': attrs.get('stat_type', 'Unknown')
-                    })
             
             sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
             stat_type = attrs.get('stat_type') or 'Unknown'
@@ -318,9 +363,6 @@ def get_all_sports_projections():
         except:
             continue
     
-    # Store league stats in session state for debug
-    st.session_state.league_stats = league_stats
-    
     return pd.DataFrame(projections)
 
 def get_projections_with_fallback():
@@ -329,8 +371,8 @@ def get_projections_with_fallback():
     if df.empty:
         # Sample data if API fails
         df = pd.DataFrame([
-            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL', 'league_id': '4'},
-            {'sport': 'Unknown', 'sport_emoji': '❓', 'badge_class': 'badge-unknown', 'player_name': 'Sample Player', 'line': 10.5, 'stat_type': 'Points', 'game_id': 'Game', 'league_id': 'unknown'},
+            {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points', 'game_id': 'PHX vs ORL', 'league_id': '7'},
+            {'sport': 'NASCAR', 'sport_emoji': '🏎️', 'badge_class': 'badge-nascar', 'player_name': 'Kyle Busch', 'line': 5.5, 'stat_type': 'Fastest Laps', 'game_id': 'Autotrader 400', 'league_id': '4'},
         ])
     
     return df
@@ -357,8 +399,6 @@ with st.sidebar:
     st.markdown("### 📊 6-Leg Flex")
     st.markdown("**Break-even:** 54.15% per pick")
     
-    st.session_state.debug_mode = st.checkbox("🔧 Debug Mode", value=True)
-    
     if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
@@ -371,58 +411,6 @@ with st.spinner("Loading props from PrizePicks..."):
 if df.empty:
     st.error("No data loaded")
     st.stop()
-
-# ===================================================
-# DEBUG SECTION - Shows what league IDs are in the data
-# ===================================================
-
-if st.session_state.debug_mode and 'league_stats' in st.session_state:
-    with st.expander("🔍 DEBUG: League ID Analysis", expanded=True):
-        st.markdown('<div class="debug-box">', unsafe_allow_html=True)
-        
-        st.subheader("League IDs Found in Data")
-        league_data = []
-        for league_id, stats in st.session_state.league_stats.items():
-            league_data.append({
-                'League ID': league_id,
-                'Count': stats['count'],
-                'Sample Players': ', '.join([s['player'] for s in stats['samples']]),
-                'Sample Games': ', '.join([s['game'] for s in stats['samples']])
-            })
-        
-        debug_df = pd.DataFrame(league_data)
-        st.dataframe(debug_df, use_container_width=True)
-        
-        # Search for specific terms
-        st.subheader("Search for Teams/Players")
-        search = st.text_input("Enter team or player name (e.g., ANA, EDM, 400, PGA, etc.)")
-        if search and st.session_state.raw_data:
-            results = []
-            for item in st.session_state.raw_data.get('data', []):
-                try:
-                    attrs = item.get('attributes', {})
-                    player = attrs.get('name') or attrs.get('description', '')
-                    game = attrs.get('game_id', '')
-                    if search.lower() in player.lower() or search.lower() in game.lower():
-                        league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
-                        league_id = league_rel.get('id', 'unknown')
-                        results.append({
-                            'League ID': league_id,
-                            'Player': player[:40],
-                            'Game': game[:40],
-                            'Stat': attrs.get('stat_type', 'Unknown'),
-                            'Line': attrs.get('line_score', 0)
-                        })
-                except:
-                    continue
-            
-            if results:
-                st.write(f"Found {len(results)} results:")
-                st.dataframe(pd.DataFrame(results), use_container_width=True)
-            else:
-                st.write("No results found")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # Add injury status
 df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
@@ -439,7 +427,7 @@ st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
 
 # Show sport breakdown in sidebar
-with st.sidebar.expander("📊 Current Sport Mapping"):
+with st.sidebar.expander("📊 Sports Available"):
     for sport, count in df['sport'].value_counts().items():
         st.write(f"{sport}: {count}")
 
