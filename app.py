@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 import time
 import pytz
+import re
 
 # Page config
 st.set_page_config(
@@ -114,14 +115,6 @@ st.markdown("""
         margin: 1rem 0;
         font-weight: bold;
     }
-    
-    .stats-box {
-        background-color: #34495E;
-        padding: 1rem;
-        border-radius: 8px;
-        margin: 1rem 0;
-        color: white;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -131,9 +124,7 @@ if 'picks' not in st.session_state:
 if 'entry_amount' not in st.session_state:
     st.session_state.entry_amount = 10.0
 if 'show_players_only' not in st.session_state:
-    st.session_state.show_players_only = False  # Default to showing everything
-if 'player_keywords' not in st.session_state:
-    st.session_state.player_keywords = set()
+    st.session_state.show_players_only = False
 
 # Sport names based on league IDs
 LEAGUE_NAMES = {
@@ -165,7 +156,7 @@ LEAGUE_NAMES = {
     '284': 'Handball',
     '379': 'Olympic Hockey',
     '383': 'Esports',
-    '345': 'Other',  # New league
+    '345': 'Other',
 }
 
 # Simple API call
@@ -295,12 +286,14 @@ with col_left:
     if selected_leagues:
         filtered_df = filtered_df[filtered_df['league_id'].isin(selected_leagues)]
     
-    # Simple filter for players - just exclude obvious team codes
+    # Simple filter for players
     if st.session_state.show_players_only:
-        # Filter out all-caps 3-letter codes
-        filtered_df = filtered_df[~filtered_df['player_name'].str.match(r'^[A-Z]{3}$')]
+        # Filter out 3-letter all-caps team codes
+        filtered_df = filtered_df[~filtered_df['player_name'].str.match(r'^[A-Z]{3}$', na=False)]
         # Filter out quarter indicators
-        filtered_df = filtered_df[~filtered_df['player_name'].str.contains('1Q|2Q|3Q|4Q|1H|2H')]
+        filtered_df = filtered_df[~filtered_df['player_name'].str.contains('1Q|2Q|3Q|4Q|1H|2H', na=False, regex=True)]
+        # Filter out common team patterns
+        filtered_df = filtered_df[~filtered_df['player_name'].str.contains('FC|United|City|Real|Team', na=False, regex=True)]
         st.markdown('<div class="filter-note">🔍 Hiding obvious team props</div>', unsafe_allow_html=True)
     
     st.caption(f"**Showing {len(filtered_df)} props**")
@@ -320,8 +313,11 @@ with col_left:
     
     # Display props
     for idx, row in filtered_df.head(30).iterrows():
-        # Simple heuristic: all-caps 3-letter codes are teams
-        is_likely_team = bool(row['player_name'].match(r'^[A-Z]{3}$')) or '1Q' in row['player_name']
+        # Simple heuristic for display
+        is_likely_team = (re.match(r'^[A-Z]{3}$', row['player_name']) or 
+                         '1Q' in row['player_name'] or 
+                         'FC' in row['player_name'] or
+                         'United' in row['player_name'])
         name_class = "team-name" if is_likely_team else "player-name"
         
         with st.container():
