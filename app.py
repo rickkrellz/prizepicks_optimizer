@@ -4,7 +4,6 @@ import numpy as np
 import requests
 from datetime import datetime
 import time
-import json
 
 # Page config
 st.set_page_config(
@@ -82,15 +81,6 @@ st.markdown("""
         border: 1px solid #e0e0e0;
         margin: 0.5rem 0;
     }
-    .debug-json {
-        background-color: #f0f0f0;
-        padding: 0.5rem;
-        border-radius: 0.3rem;
-        font-family: monospace;
-        font-size: 0.7rem;
-        max-height: 200px;
-        overflow: scroll;
-    }
     @media (max-width: 768px) {
         .stCol {
             min-width: auto !important;
@@ -108,16 +98,11 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = True
-if 'selected_sports' not in st.session_state:
-    st.session_state.selected_sports = []
-if 'raw_api_data' not in st.session_state:
-    st.session_state.raw_api_data = None
 
 # ===================================================
 # THE-ODDS-API KEY
 # ===================================================
 
-# 🔑 Your API key is set
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
@@ -125,87 +110,44 @@ ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 # ===================================================
 
 SPORT_MAPPING = {
-    # NBA Basketball
-    '4': {'name': 'NBA Basketball', 'emoji': '🏀', 'api_sport': 'basketball_nba'},
+    # Major Sports
+    '4': {'name': 'NBA Basketball', 'emoji': '🏀'},
+    '1': {'name': 'MLB Baseball', 'emoji': '⚾'},
+    '2': {'name': 'NFL Football', 'emoji': '🏈'},
+    '3': {'name': 'NHL Hockey', 'emoji': '🏒'},
+    '5': {'name': 'Soccer', 'emoji': '⚽'},
+    '7': {'name': 'MMA/UFC', 'emoji': '🥊'},
+    '8': {'name': 'Tennis', 'emoji': '🎾'},
+    '6': {'name': 'Golf', 'emoji': '🏌️'},
     
-    # MLB Baseball
-    '1': {'name': 'MLB Baseball', 'emoji': '⚾', 'api_sport': 'baseball_mlb'},
+    # Esports / Gaming (all the IDs you found)
+    '10': {'name': 'Esports', 'emoji': '🎮'},
+    '12': {'name': 'Esports', 'emoji': '🎮'},
+    '20': {'name': 'Esports', 'emoji': '🎮'},
+    '42': {'name': 'Esports', 'emoji': '🎮'},
+    '43': {'name': 'Esports', 'emoji': '🎮'},
+    '80': {'name': 'Esports', 'emoji': '🎮'},
+    '82': {'name': 'Esports', 'emoji': '🎮'},
+    '84': {'name': 'Esports', 'emoji': '🎮'},
+    '121': {'name': 'Esports', 'emoji': '🎮'},
+    '131': {'name': 'Esports', 'emoji': '🎮'},
+    '145': {'name': 'Esports', 'emoji': '🎮'},
+    '159': {'name': 'Esports', 'emoji': '🎮'},
+    '161': {'name': 'Esports', 'emoji': '🎮'},
+    '174': {'name': 'Esports', 'emoji': '🎮'},
+    '176': {'name': 'Esports', 'emoji': '🎮'},
+    '190': {'name': 'Esports', 'emoji': '🎮'},
+    '192': {'name': 'Esports', 'emoji': '🎮'},
+    '265': {'name': 'Esports', 'emoji': '🎮'},
+    '277': {'name': 'Esports', 'emoji': '🎮'},
+    '284': {'name': 'Esports', 'emoji': '🎮'},
+    '288': {'name': 'Esports', 'emoji': '🎮'},
+    '290': {'name': 'Esports', 'emoji': '🎮'},
+    '379': {'name': 'Esports', 'emoji': '🎮'},
+    '383': {'name': 'Esports', 'emoji': '🎮'},
     
-    # NFL Football
-    '2': {'name': 'NFL Football', 'emoji': '🏈', 'api_sport': 'americanfootball_nfl'},
-    
-    # NHL Hockey
-    '3': {'name': 'NHL Hockey', 'emoji': '🏒', 'api_sport': 'icehockey_nhl'},
-    
-    # Soccer
-    '5': {'name': 'Soccer', 'emoji': '⚽', 'api_sport': 'soccer_uefa_champs_league'},
-    
-    # MMA/UFC
-    '7': {'name': 'MMA/UFC', 'emoji': '🥊', 'api_sport': 'mma_mixed_martial_arts'},
-    
-    # Tennis
-    '8': {'name': 'Tennis', 'emoji': '🎾', 'api_sport': 'tennis_atp'},
-    
-    # Esports / Gaming
-    '10': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '12': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '20': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '42': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '43': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '80': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '82': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '84': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '121': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '131': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '145': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '159': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '161': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '174': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '176': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '190': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '192': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '265': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '277': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '284': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '288': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '290': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '379': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    '383': {'name': 'Esports', 'emoji': '🎮', 'api_sport': None},
-    
-    # Default for any unmapped IDs
-    'default': {'name': 'Other Sports', 'emoji': '🏆', 'api_sport': None}
+    'default': {'name': 'Other Sports', 'emoji': '🏆'}
 }
-
-# ===================================================
-# THE-ODDS-API INTEGRATION
-# ===================================================
-
-@st.cache_data(ttl=600)
-def fetch_sportsbook_lines(sport="basketball_nba"):
-    """Fetch player props from The-Odds-API for comparison"""
-    url = f"https://api.the-odds-api.com/v4/sports/{sport}/odds"
-    params = {
-        'apiKey': ODDS_API_KEY,
-        'regions': 'us',
-        'markets': 'player_points,player_rebounds,player_assists,player_points_rebounds_assists',
-        'oddsFormat': 'american'
-    }
-    
-    try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
-    except:
-        return None
-
-def american_to_prob(odds):
-    """Convert American odds to implied probability"""
-    if odds > 0:
-        return 100 / (odds + 100)
-    else:
-        return abs(odds) / (abs(odds) + 100)
 
 # ===================================================
 # INJURY REPORT
@@ -213,86 +155,62 @@ def american_to_prob(odds):
 
 @st.cache_data(ttl=3600)
 def fetch_injury_report():
-    """Fetch current injuries"""
     injuries = {
-        'Kevin Durant': {'status': 'Active', 'injury': 'None', 'team': 'HOU'},
-        'Karl-Anthony Towns': {'status': 'Active', 'injury': 'None', 'team': 'NYK'},
-        'Dillon Brooks': {'status': 'Active', 'injury': 'None', 'team': 'PHX'},
-        'Desmond Bane': {'status': 'Active', 'injury': 'None', 'team': 'ORL'},
-        'Cade Cunningham': {'status': 'Active', 'injury': 'None', 'team': 'DET'},
-        'Anthony Black': {'status': 'Active', 'injury': 'None', 'team': 'ORL'},
-        'Devin Booker': {'status': 'OUT', 'injury': 'Hip Strain', 'team': 'PHX'},
-        'Franz Wagner': {'status': 'OUT', 'injury': 'Ankle', 'team': 'ORL'},
-        'Jalen Suggs': {'status': 'Questionable', 'injury': 'Back', 'team': 'ORL'},
-        'Fred VanVleet': {'status': 'OUT', 'injury': 'Knee', 'team': 'HOU'},
+        'Kevin Durant': {'status': 'Active'},
+        'Karl-Anthony Towns': {'status': 'Active'},
+        'Dillon Brooks': {'status': 'Active'},
+        'Desmond Bane': {'status': 'Active'},
+        'Cade Cunningham': {'status': 'Active'},
+        'Anthony Black': {'status': 'Active'},
+        'Devin Booker': {'status': 'OUT'},
+        'Franz Wagner': {'status': 'OUT'},
+        'Jalen Suggs': {'status': 'Questionable'},
     }
     return injuries
 
 def get_player_injury_status(player_name, injuries_dict):
-    """Check if a player is injured"""
     for name, info in injuries_dict.items():
-        if name.lower() in player_name.lower() or player_name.lower() in name.lower():
+        if name.lower() in player_name.lower():
             return info
-    return {'status': 'Active', 'injury': 'None', 'team': 'Unknown'}
+    return {'status': 'Active'}
 
 # ===================================================
 # AUTO-PICK ENGINE
 # ===================================================
 
-def calculate_projected_hit_rate(line, sport, stat_type, injury_status, sportsbook_prob=None):
-    """Calculate projected hit rate and recommend MORE/LESS"""
-    sport_base = {
+def calculate_projected_hit_rate(line, sport, injury_status):
+    base_rates = {
         'NBA Basketball': 0.52,
         'NFL Football': 0.51,
         'MLB Baseball': 0.53,
         'NHL Hockey': 0.51,
         'Soccer': 0.50,
-        'Golf': 0.48,
-        'MMA/UFC': 0.49,
         'Esports': 0.52,
     }
     
-    base_rate = sport_base.get(sport, 0.51)
+    base_rate = base_rates.get(sport, 0.51)
     
-    if sportsbook_prob:
-        base_rate = sportsbook_prob
-    
+    # Line adjustment
     if line > 50:
         line_factor = 0.95
     elif line > 20:
         line_factor = 0.98
-    elif line > 10:
-        line_factor = 1.0
     else:
-        line_factor = 1.02
+        line_factor = 1.0
     
+    # Injury adjustment
     injury_factor = 1.0
     if injury_status['status'] == 'OUT':
         injury_factor = 0.3
     elif injury_status['status'] == 'Questionable':
         injury_factor = 0.8
-    elif injury_status['status'] == 'Probable':
-        injury_factor = 0.95
     
-    opportunity_factor = 1.0
-    player_name = injury_status.get('player_name', '')
-    
-    if 'Brooks' in player_name:
-        opportunity_factor = 1.1
-    elif 'Bane' in player_name or 'Black' in player_name:
-        opportunity_factor = 1.1
-    
-    hit_rate = base_rate * line_factor * injury_factor * opportunity_factor
+    hit_rate = base_rate * line_factor * injury_factor
     hit_rate = min(hit_rate, 0.75)
     
-    if hit_rate > 0.5415:
-        recommendation = "MORE"
-        confidence = "High" if hit_rate > 0.58 else "Medium"
-    else:
-        recommendation = "LESS"
-        confidence = "High" if hit_rate < 0.50 else "Medium"
+    recommendation = "MORE" if hit_rate > 0.5415 else "LESS"
     
-    return hit_rate, recommendation, confidence
+    return hit_rate, recommendation
 
 # ===================================================
 # PRIZEPICKS API
@@ -300,62 +218,41 @@ def calculate_projected_hit_rate(line, sport, stat_type, injury_status, sportsbo
 
 @st.cache_data(ttl=300)
 def fetch_prizepicks_projections():
-    """Fetch ALL projections from PrizePicks public API"""
     url = "https://api.prizepicks.com/projections"
     
     headers = {
         'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'application/json',
         'Referer': 'https://app.prizepicks.com/',
-        'Origin': 'https://app.prizepicks.com',
-        'Connection': 'keep-alive',
     }
     
     try:
-        time.sleep(0.5)
         response = requests.get(url, headers=headers, timeout=10)
-        
         if response.status_code == 200:
-            data = response.json()
-            st.session_state.raw_api_data = data
-            return data
-        else:
-            st.sidebar.error(f"API Error: {response.status_code}")
-            return None
-            
-    except Exception as e:
-        st.sidebar.error(f"API Exception: {str(e)}")
+            return response.json()
+        return None
+    except:
         return None
 
 @st.cache_data(ttl=300)
 def get_all_sports_projections():
-    """Extract ALL sports projections from PrizePicks data"""
     data = fetch_prizepicks_projections()
     
     if not data:
         return pd.DataFrame()
     
     projections = []
-    league_ids_found = set()
-    
-    total_items = len(data.get('data', []))
     
     for item in data.get('data', []):
         try:
             attrs = item.get('attributes', {})
-            
             line_score = attrs.get('line_score')
             if line_score is None:
                 continue
             
             # Get player name
-            player_name = (attrs.get('name') or 
-                          attrs.get('description') or 
-                          attrs.get('display_name') or 
-                          'Unknown').strip()
-            
-            if not player_name or player_name == 'Unknown':
+            player_name = (attrs.get('name') or attrs.get('description') or '').strip()
+            if not player_name:
                 continue
             
             # Get league ID
@@ -363,73 +260,36 @@ def get_all_sports_projections():
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
-                league_ids_found.add(league_id)
             
-            # Get sport info from mapping
+            # Get sport info
             sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
             
             # Get stat type
-            stat_type = (attrs.get('stat_type') or 
-                        attrs.get('stat_display_name') or 
-                        'Unknown')
+            stat_type = attrs.get('stat_type') or 'Unknown'
             
-            proj = {
-                'id': item.get('id'),
-                'league_id': league_id,
+            projections.append({
                 'sport': sport_info['name'],
                 'sport_emoji': sport_info['emoji'],
                 'player_name': player_name,
                 'line': float(line_score),
                 'stat_type': stat_type,
-                'start_time': attrs.get('start_time', ''),
-            }
-            
-            projections.append(proj)
+            })
                 
-        except Exception as e:
+        except:
             continue
     
-    df = pd.DataFrame(projections)
-    
-    if not df.empty:
-        st.sidebar.success(f"✅ Loaded {len(df)} props from {len(league_ids_found)} leagues")
-    else:
-        st.sidebar.warning("No props could be processed")
-    
-    return df
-
-def get_projections_with_fallback():
-    """Get projections with sample data fallback"""
-    df = get_all_sports_projections()
-    
-    if df.empty:
-        st.sidebar.info("📊 Using sample data")
-        
-        sample_data = [
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Anthony Black', 'line': 16.5, 'stat_type': 'Points'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Cade Cunningham', 'line': 25.5, 'stat_type': 'Points'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points'},
-            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Karl-Anthony Towns', 'line': 30.5, 'stat_type': 'PRA'},
-        ]
-        
-        df = pd.DataFrame(sample_data)
-    
-    df['time'] = 'Today'
-    return df
+    return pd.DataFrame(projections)
 
 # ===================================================
 # MAIN APP
 # ===================================================
 
-st.markdown('<p class="main-header">🏆 PrizePicks Optimizer — Auto Picks + Injuries</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🏆 PrizePicks Optimizer</p>', unsafe_allow_html=True)
 st.markdown(f"**Last Updated:** {datetime.now().strftime('%I:%M:%S %p')}")
 
 # Sidebar
 with st.sidebar:
     st.markdown("### ⚙️ Settings")
-    
     num_legs = st.selectbox("Number of Legs", [6, 5, 4, 3, 2], index=0)
     st.session_state.entry_amount = st.number_input("Entry Amount ($)", 1.0, 100.0, 10.0)
     
@@ -442,7 +302,7 @@ with st.sidebar:
     st.markdown("### 📊 6-Leg Flex")
     st.markdown("**Break-even:** 54.15% per pick")
     
-    if st.button("🔄 Refresh Data", type="primary", use_container_width=True):
+    if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -452,44 +312,48 @@ col_left, col_right = st.columns([1.3, 0.7])
 with col_left:
     st.markdown('<p class="sub-header">📋 Available Props</p>', unsafe_allow_html=True)
     
-    with st.spinner("Loading projections..."):
-        df = get_projections_with_fallback()
+    with st.spinner("Loading 17,000+ props from PrizePicks..."):
+        df = get_all_sports_projections()
         injuries_dict = fetch_injury_report()
     
-    # Add injury info
+    if df.empty:
+        st.error("No props loaded. Using sample data.")
+        df = pd.DataFrame([
+            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
+            {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
+        ])
+    
+    # Add injury status and hit rates
     df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
     
-    # Calculate hit rates
-    hit_results = df.apply(
-        lambda row: calculate_projected_hit_rate(
-            row['line'], row['sport'], row['stat_type'],
-            {**row['injury_status'], 'player_name': row['player_name']}
-        ), axis=1
-    )
+    hit_results = df.apply(lambda row: calculate_projected_hit_rate(
+        row['line'], row['sport'], row['injury_status']), axis=1)
     
     df['hit_rate'] = [hr[0] for hr in hit_results]
     df['recommendation'] = [hr[1] for hr in hit_results]
-    df['confidence'] = [hr[2] for hr in hit_results]
     
+    # Sort by hit rate
     df = df.sort_values('hit_rate', ascending=False)
+    
+    # Show total count
+    st.sidebar.success(f"✅ Loaded {len(df):,} props from PrizePicks")
     
     # Sport filter
     sports_list = sorted(df['sport'].unique())
-    selected_sports = st.multiselect("Select Sports", sports_list, default=['NBA Basketball'] if 'NBA Basketball' in sports_list else [])
+    default_sports = ['NBA Basketball'] if 'NBA Basketball' in sports_list else []
+    selected_sports = st.multiselect("Select Sports", sports_list, default=default_sports)
     
+    # Apply filters
     filtered_df = df.copy()
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
-    else:
-        st.info("👆 Select a sport above to view props")
-        filtered_df = pd.DataFrame()
     
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
-    st.caption(f"**Found {len(filtered_df)} props**")
+    st.caption(f"**Showing {len(filtered_df):,} of {len(df):,} total props**")
     
-    # Auto-select
+    # Auto-select if enabled
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
         for _, row in filtered_df.head(num_legs).iterrows():
             st.session_state.picks.append({
@@ -505,7 +369,7 @@ with col_left:
         st.rerun()
     
     # Display props
-    for idx, row in filtered_df.head(15).iterrows():
+    for idx, row in filtered_df.head(20).iterrows():
         hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
         badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
         
@@ -606,8 +470,8 @@ with col_right:
 
 # Footer
 st.markdown("---")
-st.markdown("""
+st.markdown(f"""
 <div style='text-align: center; color: #666; font-size: 0.8rem;'>
-    <p>🏆 Connected to PrizePicks live data | {len(df) if 'df' in locals() else 0} props loaded | Auto picks enabled</p>
+    <p>🏆 {len(df):,} live props loaded from PrizePicks | Auto picks enabled | 54.15% break-even</p>
 </div>
 """, unsafe_allow_html=True)
