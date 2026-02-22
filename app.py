@@ -23,7 +23,7 @@ def get_central_time():
     central_now = utc_now.astimezone(central_tz)
     return central_now
 
-# HIGH CONTRAST CSS
+# HIGH CONTRAST CSS - Fixed button colors
 st.markdown("""
 <style>
     /* Main header */
@@ -118,7 +118,6 @@ st.markdown("""
     .badge-cbb { background-color: #FF4500; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-unrivaled { background-color: #FF69B4; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-ohockey { background-color: #000080; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
-    .badge-esports2 { background-color: #800080; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-other { background-color: #555555; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     
     /* MORE/LESS badges */
@@ -177,16 +176,16 @@ st.markdown("""
         border: 1px solid #1E88E5;
     }
     
-    /* Buttons */
-    div.stButton > button:first-child {
+    /* Buttons - FIXED with more specific selector */
+    .stButton > button {
         width: 100%;
-        border-radius: 20px;
-        font-weight: 600;
+        border-radius: 20px !important;
+        font-weight: 600 !important;
         background-color: #1E88E5 !important;
         color: #FFFFFF !important;
         border: 2px solid #FFFFFF !important;
     }
-    div.stButton > button:first-child:hover {
+    .stButton > button:hover {
         background-color: #0D47A1 !important;
         color: #FFFFFF !important;
         border: 2px solid #FFFFFF !important;
@@ -239,59 +238,252 @@ if 'show_recommended' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING - Based on actual league IDs from API
+# COMPLETE SPORT MAPPING
 # ===================================================
 
 SPORT_MAPPING = {
-    # Esports (most common from your data)
+    # MLB
+    '1': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    '43': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    '190': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # MMA
+    '12': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
+    
+    # Esports
     '265': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '284': {'name': 'Handball', 'emoji': '🤾', 'badge': 'badge-other'},
-    
-    # Add more as we discover them
-    '1': {'name': 'PGA', 'emoji': '⛳', 'badge': 'badge-pga'},
-    '4': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
-    '5': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-tennis'},
-    '7': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    '12': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
-    '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
-    '42': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-mma'},
-    '43': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
     '80': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '84': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '121': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
     '145': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '159': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '161': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '174': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '176': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '190': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
-    '192': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '277': {'name': 'Curling', 'emoji': '🥌', 'badge': 'badge-other'},
-    '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-unrivaled'},
-    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
-    '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-ohockey'},
     '383': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    
+    # Handball
+    '284': {'name': 'Handball', 'emoji': '🤾', 'badge': 'badge-other'},
+    
+    # PGA/Golf
+    '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
+    
+    # NASCAR
+    '4': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
+    
+    # Tennis
+    '5': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-tennis'},
+    
+    # NBA
+    '7': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    '192': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # NHL
+    '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
+    
+    # Boxing
+    '42': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-mma'},
+    
+    # College Basketball
+    '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
+    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
+    
+    # Curling
+    '277': {'name': 'Curling', 'emoji': '🥌', 'badge': 'badge-other'},
+    
+    # Unrivaled
+    '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-unrivaled'},
+    
+    # Olympic Hockey
+    '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-ohockey'},
     
     'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
 
 # ===================================================
-# SIMPLE PLAYER NAME CHECK
+# STRICT PLAYER NAME CHECK - Filters out teams
 # ===================================================
 
 def is_player_name(name):
-    """Simple check to filter out obvious team names"""
+    """Strict check to filter out team names, keep player names"""
     if not name or len(name) < 3:
         return False
     
-    # If it's a single word and all caps, likely a team
-    if ' ' not in name and name.isupper() and len(name) <= 5:
+    # List of common team indicators
+    team_indicators = [
+        # MLB season patterns
+        '(2026 SZN)',
+        '2026 SZN',
+        'SZN',
+        # Team patterns
+        'Team',
+        'United',
+        'FC',
+        'SC',
+        'CF',
+        'Club',
+        'City',
+        'Athletic',
+        'Rovers',
+        'County',
+        'Albion',
+        'Wanderers',
+        'Town',
+        'Forest',
+        'Villa',
+        'Palace',
+        'Hotspur',
+        'Ham',
+        'North End',
+        'Orient',
+        'Vale',
+        'Dale',
+        'Star',
+        # Common team names
+        'Crystal Palace',
+        'Nottm Forest',
+        'Nottingham Forest',
+        'St. Pauli',
+        'St Pauli',
+        'Manchester',
+        'Liverpool',
+        'Chelsea',
+        'Arsenal',
+        'Tottenham',
+        'Newcastle',
+        'Leicester',
+        'Everton',
+        'Wolverhampton',
+        'Southampton',
+        'Brighton',
+        'West Ham',
+        'Aston Villa',
+        'Brentford',
+        'Fulham',
+        'Bournemouth',
+        'Wolves',
+        'Leeds',
+        'Sheffield',
+        'Middlesbrough',
+        'Blackburn',
+        'Preston',
+        'Hull',
+        'Sunderland',
+        'Birmingham',
+        'Norwich',
+        'Watford',
+        'Stoke',
+        'QPR',
+        'Millwall',
+        'Cardiff',
+        'Swansea',
+        'Bristol',
+        'Reading',
+        'Coventry',
+        'Rotherham',
+        'Plymouth',
+        'Ipswich',
+        'Oxford',
+        'Cambridge',
+        'Charlton',
+        'Derby',
+        'Portsmouth',
+        'Bolton',
+        'Wigan',
+        'Blackpool',
+        'Barnsley',
+        'Burton',
+        'Accrington',
+        'Morecambe',
+        'Salford',
+        'Harrogate',
+        'Bradford',
+        'Carlisle',
+        'Barrow',
+        'Tranmere',
+        'Crewe',
+        'Doncaster',
+        'Gillingham',
+        'Wimbledon',
+        'Crawley',
+        'Swindon',
+        'Walsall',
+        'Mansfield',
+        'Colchester',
+        'Newport',
+        'Sutton',
+        'Stevenage',
+        'Hartlepool',
+        'Halifax',
+        'Aldershot',
+        'Bromley',
+        'Boreham Wood',
+        'Dagenham',
+        'Eastleigh',
+        'Solihull',
+        'Maidenhead',
+        'Wrexham',
+        'Chesterfield',
+        'York',
+        'Darlington',
+        'Scunthorpe',
+        'Boston',
+        'Kidderminster',
+        'Hereford',
+        'Gloucester',
+        'Fylde',
+        'Altrincham',
+        'Southport',
+        'Blyth',
+        'Buxton',
+        'Banbury',
+        'Brackley',
+        'Chorley',
+        'Curzon',
+        'Gateshead',
+        'Guiseley',
+        'Leamington',
+        'Nuneaton',
+        'Peterborough Sports',
+        'Rushall',
+        'South Shields',
+        'Spennymoor',
+        'Warrington',
+        'Worksop',
+    ]
+    
+    # Check for team indicators
+    name_lower = name.lower()
+    for indicator in team_indicators:
+        if isinstance(indicator, str):
+            if indicator.lower() in name_lower:
+                return False
+    
+    # Check for patterns like "CLE (2026 SZN)"
+    if '(' in name and 'SZN' in name:
         return False
     
-    # Keep everything else for now
+    # Check for all caps team codes (like "CLE", "TOR", etc.)
+    if name.isupper() and len(name) <= 5 and ' ' not in name:
+        return False
+    
+    # Check if it's a single word that looks like a team
+    if ' ' not in name and len(name) <= 10 and name[0].isupper():
+        # Could be a player like "LeBron" but we'll keep these for now
+        # and rely on other filters
+        pass
+    
+    # Must have at least a first and last name for player props
+    parts = name.split()
+    if len(parts) < 2:
+        return False
+    
+    # Each part should be reasonable length
+    for part in parts:
+        if len(part) < 2:
+            return False
+    
     return True
 
 # ===================================================
@@ -300,7 +492,6 @@ def is_player_name(name):
 
 @st.cache_data(ttl=300)
 def fetch_prizepicks_projections():
-    """Fetch projections with working headers from debug"""
     url = "https://api.prizepicks.com/projections"
     
     headers = {
@@ -331,7 +522,6 @@ def fetch_prizepicks_projections():
 
 @st.cache_data(ttl=300)
 def get_all_projections():
-    """Get all projections from PrizePicks"""
     data = fetch_prizepicks_projections()
     
     if not data:
@@ -339,6 +529,7 @@ def get_all_projections():
     
     projections = []
     league_counts = {}
+    filtered_count = 0
     
     for item in data.get('data', []):
         try:
@@ -351,7 +542,11 @@ def get_all_projections():
             if not player_name:
                 continue
             
-            # Get league ID
+            # Strict filtering - only keep player names
+            if not is_player_name(player_name):
+                filtered_count += 1
+                continue
+            
             league_id = 'default'
             league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
             if league_rel:
@@ -374,9 +569,8 @@ def get_all_projections():
             continue
     
     df = pd.DataFrame(projections)
-    
-    # Store league counts for debugging
     st.session_state.league_counts = league_counts
+    st.session_state.filtered_count = filtered_count
     
     return df
 
@@ -497,11 +691,13 @@ df = df.sort_values('hit_rate', ascending=False)
 st.sidebar.markdown(f"**Total Props:** {len(df):,}")
 st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
+if 'filtered_count' in st.session_state:
+    st.sidebar.markdown(f"**Filtered Out:** {st.session_state.filtered_count:,}")
 
 # Show league distribution
 with st.sidebar.expander("📊 League Distribution", expanded=True):
     if 'league_counts' in st.session_state:
-        for league_id, count in sorted(st.session_state.league_counts.items())[:15]:
+        for league_id, count in sorted(st.session_state.league_counts.items(), key=lambda x: x[1], reverse=True)[:15]:
             sport_name = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])['name']
             st.write(f"**{league_id}** ({sport_name}): {count:,}")
 
@@ -509,11 +705,11 @@ with st.sidebar.expander("📊 League Distribution", expanded=True):
 col_left, col_right = st.columns([1.3, 0.7])
 
 with col_left:
-    st.markdown('<p class="section-header">📋 Available Props</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">📋 Available Player Props</p>', unsafe_allow_html=True)
     
     # Sport filter
     sports_list = sorted(df['sport'].unique())
-    selected_sports = st.multiselect("Select Sports", sports_list, default=[])
+    selected_sports = st.multiselect("Select Sports", sports_list, default=['NBA'] if 'NBA' in sports_list else [])
     
     # Apply filters
     filtered_df = df.copy()
@@ -523,7 +719,7 @@ with col_left:
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
-    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props**")
+    st.caption(f"**Showing {len(filtered_df)} of {len(df)} player props**")
     
     # Auto-select
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
@@ -637,13 +833,13 @@ with col_right:
             st.session_state.picks = []
             st.rerun()
     else:
-        st.info("👆 Add props from the left panel")
+        st.info("👆 Add player props from the left panel")
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} props loaded | 
+    <p>🏀 {len(df):,} player props | 
     <span style='color:#FFFFFF; background-color:#2E7D32; padding:0.2rem 0.5rem; border-radius:20px;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
     <span style='color:#FFFFFF; background-color:#C62828; padding:0.2rem 0.5rem; border-radius:20px;'>{len(df[df['recommendation']=='LESS']):,} LESS</span>
     </p>
