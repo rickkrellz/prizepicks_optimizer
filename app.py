@@ -9,7 +9,7 @@ import pytz
 
 # Page config
 st.set_page_config(
-    page_title="PrizePicks Player Props Only",
+    page_title="PrizePicks Player Props",
     page_icon="🏀",
     layout="wide"
 )
@@ -52,38 +52,59 @@ st.markdown("""
     /* API Status indicators */
     .api-status {
         display: flex;
-        gap: 1rem;
-        margin: 0.5rem 0;
-        padding: 0.5rem;
+        gap: 2rem;
+        margin: 1rem 0;
+        padding: 1rem;
         background-color: #2C3E50;
-        border-radius: 8px;
+        border-radius: 10px;
         border: 1px solid #1E88E5;
+        justify-content: center;
     }
     .api-status-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.8rem;
+        font-size: 1.1rem;
     }
     .status-dot {
-        width: 12px;
-        height: 12px;
+        width: 16px;
+        height: 16px;
         border-radius: 50%;
         display: inline-block;
     }
     .status-dot.green {
         background-color: #2E7D32;
-        box-shadow: 0 0 10px #2E7D32;
-    }
-    .status-dot.red {
-        background-color: #C62828;
-        box-shadow: 0 0 10px #C62828;
+        box-shadow: 0 0 15px #2E7D32;
+        animation: pulse-green 2s infinite;
     }
     .status-dot.yellow {
         background-color: #FFC107;
-        box-shadow: 0 0 10px #FFC107;
+        box-shadow: 0 0 15px #FFC107;
+        animation: pulse-yellow 2s infinite;
+    }
+    .status-dot.red {
+        background-color: #C62828;
+        box-shadow: 0 0 15px #C62828;
+        animation: pulse-red 2s infinite;
     }
     
-    /* Sport badges - high contrast */
+    @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
+    }
+    @keyframes pulse-yellow {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+    @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(198, 40, 40, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
+    }
+    
+    /* Sport badges */
     .badge-nba { background-color: #17408B; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-nhl { background-color: #000000; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-mlb { background-color: #041E42; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
@@ -185,13 +206,21 @@ st.markdown("""
     }
     
     /* Text colors */
-    p, span, div {
-        color: #FFFFFF;
+    p, span, div, label {
+        color: #FFFFFF !important;
     }
     
     /* Select box */
     .stSelectbox label, .stMultiselect label {
         color: #FFFFFF !important;
+        font-weight: 600;
+    }
+    
+    /* Success/Error messages */
+    .stAlert {
+        background-color: #2C3E50 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #1E88E5 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -218,14 +247,14 @@ if 'api_status' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# SPORT MAPPING - Complete with all sports
+# SPORT MAPPING
 # ===================================================
 
 SPORT_MAPPING = {
     # MMA/UFC
     '12': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
     
-    # Esports / Gaming
+    # Esports
     '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '265': {'name': 'CS2', 'emoji': '🎮', 'badge': 'badge-esports'},
     '121': {'name': 'LoL', 'emoji': '🎮', 'badge': 'badge-esports'},
@@ -283,6 +312,7 @@ SPORT_MAPPING = {
     '190': {'name': 'MLB SZN', 'emoji': '⚾', 'badge': 'badge-mlb'},
     
     # Soccer
+    '5': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
     '6': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
     '44': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
     '45': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
@@ -291,11 +321,11 @@ SPORT_MAPPING = {
 }
 
 # ===================================================
-# RELAXED PLAYER NAME VALIDATION
+# PLAYER NAME VALIDATION
 # ===================================================
 
 def is_real_player_name(name):
-    """Check for real player names - more relaxed to include NBA players"""
+    """Check for real player names"""
     if not name or len(name) < 3:
         return False
     
@@ -316,9 +346,6 @@ def is_real_player_name(name):
     if ' ' not in name and name.isupper() and len(name) <= 4:
         return False
     
-    # Allow names like "LeBron James", "Cristiano Ronaldo", etc.
-    # They can have spaces and various lengths
-    
     # Check for common non-player patterns
     non_player_indicators = ['Round', 'Game', 'Match', 'Team', 'United', 'FC', 'SC', 'CF', 'Club']
     if any(indicator in name for indicator in non_player_indicators):
@@ -336,16 +363,26 @@ def is_real_player_name(name):
 
 def check_apis():
     """Check status of both APIs"""
-    # Check PrizePicks
+    # Check PrizePicks with proper headers
     pp_status = 'red'
     try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+            'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Referer': 'https://app.prizepicks.com/',
+            'Origin': 'https://app.prizepicks.com',
+            'Connection': 'keep-alive',
+        }
         response = requests.get("https://api.prizepicks.com/projections", 
-                               headers={'User-Agent': 'Mozilla/5.0'}, 
+                               headers=headers, 
                                timeout=5)
         if response.status_code == 200:
             pp_status = 'green'
-        else:
+        elif response.status_code == 403:
             pp_status = 'yellow'
+        else:
+            pp_status = 'red'
     except:
         pp_status = 'red'
     
@@ -456,25 +493,45 @@ def calculate_projected_hit_rate(line, sport, injury_status):
     return hit_rate
 
 # ===================================================
-# PRIZEPICKS API
+# PRIZEPICKS API - FIXED HEADERS
 # ===================================================
 
 @st.cache_data(ttl=300)
 def fetch_prizepicks_projections():
     url = "https://api.prizepicks.com/projections"
     
+    # Complete headers to mimic iPad browser
     headers = {
         'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-        'Accept': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
         'Referer': 'https://app.prizepicks.com/',
+        'Origin': 'https://app.prizepicks.com',
+        'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
     }
     
     try:
+        # Add delay to avoid rate limiting
+        time.sleep(0.5)
         response = requests.get(url, headers=headers, timeout=10)
+        
         if response.status_code == 200:
             return response.json()
+        else:
+            st.warning(f"PrizePicks API returned status code: {response.status_code}")
+            return None
+            
+    except requests.exceptions.Timeout:
+        st.warning("PrizePicks API timeout - using sample data")
         return None
-    except:
+    except requests.exceptions.RequestException as e:
+        st.warning(f"PrizePicks API error: {e}")
+        return None
+    except Exception as e:
+        st.warning(f"Unexpected error: {e}")
         return None
 
 @st.cache_data(ttl=300)
@@ -535,30 +592,41 @@ current_time = get_central_time()
 st.session_state.api_status = check_apis()
 
 # Header with API status
-st.markdown('<p class="main-header">🏀 PrizePicks Player Props Only</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🏀 PrizePicks Player Props</p>', unsafe_allow_html=True)
 
 # API Status indicators
-col1, col2, col3 = st.columns([1, 1, 2])
+st.markdown('<div class="api-status">', unsafe_allow_html=True)
+col1, col2, col3 = st.columns([1, 1, 1])
+
 with col1:
-    pp_dot = "green" if st.session_state.api_status['prizepicks'] == 'green' else "red"
+    pp_dot = st.session_state.api_status['prizepicks']
+    status_text = "Connected" if pp_dot == 'green' else "Limited" if pp_dot == 'yellow' else "Offline"
     st.markdown(f"""
     <div class='api-status-item'>
         <span class='status-dot {pp_dot}'></span>
-        <span>PrizePicks API: {st.session_state.api_status['prizepicks'].upper()}</span>
+        <span><strong>PrizePicks:</strong> {status_text}</span>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
-    odds_dot = "green" if st.session_state.api_status['odds_api'] == 'green' else "red"
+    odds_dot = st.session_state.api_status['odds_api']
+    status_text = "Connected" if odds_dot == 'green' else "Limited" if odds_dot == 'yellow' else "Offline"
     st.markdown(f"""
     <div class='api-status-item'>
         <span class='status-dot {odds_dot}'></span>
-        <span>Odds API: {st.session_state.api_status['odds_api'].upper()}</span>
+        <span><strong>Odds API:</strong> {status_text}</span>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
-    st.markdown(f"**Last Updated:** {current_time.strftime('%I:%M:%S %p CT')}")
+    st.markdown(f"""
+    <div class='api-status-item'>
+        <span>🕐</span>
+        <span><strong>Updated:</strong> {current_time.strftime('%I:%M:%S %p CT')}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
@@ -585,8 +653,11 @@ with st.spinner("Loading player props from PrizePicks..."):
     injuries_dict = fetch_injury_report()
 
 if df.empty:
-    st.error("No player props loaded. Using sample data.")
-    df = pd.DataFrame([
+    st.info("📢 PrizePicks API limited - Using sample data for demonstration")
+    
+    # Comprehensive sample data with multiple sports
+    sample_data = [
+        # NBA
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Anthony Black', 'line': 16.5, 'stat_type': 'Points'},
@@ -595,13 +666,19 @@ if df.empty:
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA'},
+        # NHL
         {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points'},
         {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals'},
+        # Soccer
         {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals'},
         {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Cristiano Ronaldo', 'line': 1.5, 'stat_type': 'Shots'},
+        # PGA
         {'sport': 'PGA', 'sport_emoji': '⛳', 'badge_class': 'badge-pga', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score'},
+        # Tennis
         {'sport': 'Tennis', 'sport_emoji': '🎾', 'badge_class': 'badge-tennis', 'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games'},
-    ])
+    ]
+    
+    df = pd.DataFrame(sample_data)
 
 # Add injury status
 df['injury_status'] = df['player_name'].apply(lambda x: get_player_injury_status(x, injuries_dict))
@@ -629,7 +706,7 @@ col_left, col_right = st.columns([1.3, 0.7])
 with col_left:
     st.markdown('<p class="section-header">📋 Available Player Props</p>', unsafe_allow_html=True)
     
-    # Sport filter - show ALL sports
+    # Sport filter
     sports_list = sorted(df['sport'].unique())
     selected_sports = st.multiselect("Select Sports", sports_list, default=['NBA'] if 'NBA' in sports_list else [])
     
@@ -638,7 +715,6 @@ with col_left:
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
     else:
-        # If no sports selected, show all
         filtered_df = df.copy()
     
     if st.session_state.show_recommended and not filtered_df.empty:
@@ -709,14 +785,14 @@ with col_right:
             with st.container():
                 st.markdown(f"""
                 <div class='entry-card'>
-                    <div style='display: flex; justify-content: space-between;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center;'>
                         <span class='player-name'>{pick['sport_emoji']} {pick['player']}</span>
                         <span class='{"more-badge" if pick["pick"]=="MORE" else "less-badge"}' style='padding:0.2rem 0.8rem; font-size:0.8rem;'>
                             {pick['pick']}
                         </span>
                     </div>
-                    <div>{pick['stat']} {pick['line']:.1f}</div>
-                    <div style='color: #FFFFFF; background-color: {"#2E7D32" if pick["hit_rate"] > 0.5415 else "#C62828"}; padding: 0.2rem 0.5rem; border-radius: 8px; display: inline-block;'>
+                    <div style='margin: 0.5rem 0;'>{pick['stat']} {pick['line']:.1f}</div>
+                    <div style='color: #FFFFFF; background-color: {"#2E7D32" if pick["hit_rate"] > 0.5415 else "#C62828"}; padding: 0.2rem 0.8rem; border-radius: 20px; display: inline-block;'>
                         Hit rate: {pick['hit_rate']*100:.1f}%
                     </div>
                 """, unsafe_allow_html=True)
