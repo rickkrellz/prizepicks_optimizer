@@ -493,7 +493,7 @@ with col_left:
             })
         st.rerun()
     
-    # Display props - FIXED VERSION
+    # Display props - FIXED VERSION with proper badge rendering
     for idx, row in filtered_df.head(15).iterrows():
         # Determine colors
         hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
@@ -504,7 +504,7 @@ with col_left:
         if row['injury_status']['status'] != 'Active':
             injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>"
         
-        # Create prop card - CLEAN VERSION
+        # Create prop card with proper badge rendering
         st.markdown(f"""
         <div class='pick-card'>
             <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
@@ -517,7 +517,7 @@ with col_left:
                 <div style='display: flex; align-items: center; gap: 0.5rem;'>
                     <span>{row['stat_type']} {row['line']}</span>
                     <span class='{hit_color}' style='font-weight: bold;'>{row['hit_rate']*100:.1f}%</span>
-                    <span style='background-color: {badge_color}; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold;'>
+                    <span style='background-color: {badge_color}; color: white; padding: 0.2rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: bold; display: inline-block; min-width: 45px; text-align: center;'>
                         {row['recommendation']}
                     </span>
                 </div>
