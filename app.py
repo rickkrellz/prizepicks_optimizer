@@ -4,11 +4,13 @@ import numpy as np
 import requests
 from datetime import datetime
 import time
+import random
 import pytz
+import re
 
 # Page config
 st.set_page_config(
-    page_title="PrizePicks Player Props",
+    page_title="PrizePicks Player Props Only",
     page_icon="🏀",
     layout="wide"
 )
@@ -22,10 +24,9 @@ def get_central_time():
     central_now = utc_now.astimezone(central_tz)
     return central_now
 
-# SIMPLIFIED CSS - Easy to read
+# Clean CSS
 st.markdown("""
 <style>
-    /* Main header */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -37,7 +38,6 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     
-    /* Section headers */
     .section-header {
         font-size: 1.5rem;
         font-weight: 600;
@@ -48,7 +48,6 @@ st.markdown("""
         margin: 1rem 0;
     }
     
-    /* Status indicators */
     .status-dot {
         display: inline-block;
         width: 12px;
@@ -57,9 +56,7 @@ st.markdown("""
         margin-right: 5px;
     }
     .green { background-color: #00FF00; }
-    .red { background-color: #FF0000; }
     
-    /* Sport badges */
     .badge {
         padding: 0.2rem 0.6rem;
         border-radius: 12px;
@@ -71,10 +68,11 @@ st.markdown("""
     .badge-nba { background-color: #17408B; }
     .badge-nhl { background-color: #000000; }
     .badge-mlb { background-color: #041E42; }
+    .badge-tennis { background-color: #CC5500; }
     .badge-soccer { background-color: #006400; }
+    .badge-pga { background-color: #0A4C33; }
     .badge-other { background-color: #555555; }
     
-    /* MORE/LESS badges */
     .more-badge {
         background-color: #2E7D32;
         color: white;
@@ -98,19 +96,15 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Hit rate */
     .hit-high {
         color: #2E7D32;
         font-weight: bold;
-        font-size: 1rem;
     }
     .hit-low {
         color: #C62828;
         font-weight: bold;
-        font-size: 1rem;
     }
     
-    /* Cards */
     .prop-card {
         background-color: #2C3E50;
         padding: 1rem;
@@ -135,14 +129,12 @@ st.markdown("""
         color: white;
     }
     
-    /* Player name */
     .player-name {
         font-size: 1.2rem;
         font-weight: 700;
         color: white;
     }
     
-    /* Stat line */
     .stat-line {
         background-color: #ECF0F1;
         color: #2C3E50;
@@ -153,7 +145,6 @@ st.markdown("""
         display: inline-block;
     }
     
-    /* Buttons - SIMPLE */
     .stButton button {
         width: 100%;
         border-radius: 20px;
@@ -164,13 +155,8 @@ st.markdown("""
     }
     .stButton button:hover {
         background-color: #0D47A1;
-        color: white;
     }
     
-    /* Text colors */
-    .white-text { color: white !important; }
-    
-    /* Footer */
     .footer {
         text-align: center;
         color: white;
@@ -193,78 +179,195 @@ if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
 
 # ===================================================
-# SIMPLE SPORT MAPPING
+# THE-ODDS-API KEY
 # ===================================================
 
-SPORT_MAPPING = {
-    # NBA
-    '7': 'NBA',
-    '192': 'NBA',
-    '4': 'NBA',  # This might be NASCAR, but we'll see
-    
-    # NHL
-    '8': 'NHL',
-    '3': 'NHL',
-    
-    # MLB
-    '1': 'MLB',
-    '43': 'MLB',
-    '190': 'MLB',
-    
-    # Soccer
-    '5': 'Soccer',
-    '6': 'Soccer',
-    '44': 'Soccer',
-    '45': 'Soccer',
-    
-    # Others default to 'Other'
-}
+ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
-def get_sport_name(league_id):
-    return SPORT_MAPPING.get(league_id, 'Other')
+# ===================================================
+# STRICT PLAYER NAME FILTERING
+# ===================================================
+
+# List of NBA team abbreviations to filter out
+NBA_TEAMS = [
+    'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
+    'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
+    'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS'
+]
+
+# List of NHL team abbreviations
+NHL_TEAMS = [
+    'ANA', 'ARI', 'BOS', 'BUF', 'CGY', 'CAR', 'CHI', 'COL', 'CBJ', 'DAL', 'DET', 'EDM',
+    'FLA', 'LAK', 'MIN', 'MTL', 'NSH', 'NJD', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT', 'SJS',
+    'SEA', 'STL', 'TBL', 'TOR', 'VAN', 'VGK', 'WSH', 'WPG'
+]
+
+# List of MLB team abbreviations
+MLB_TEAMS = [
+    'ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CIN', 'CLE', 'COL', 'CWS', 'DET', 'HOU', 'KC',
+    'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SD', 'SF',
+    'SEA', 'STL', 'TB', 'TEX', 'TOR', 'WSH'
+]
+
+# Soccer teams that appear in your data
+SOCCER_TEAMS = [
+    'Pumas', 'America', 'Chivas', 'Tigres', 'Monterrey', 'Cruz Azul', 'Leon', 'Pachuca',
+    'Toluca', 'Santos', 'Juarez', 'Atlas', 'Queretaro', 'Mazatlan', 'Puebla', 'Necaxa',
+    'Tijuana', 'San Luis', 'FC', 'United', 'City', 'Real', 'Barcelona', 'Madrid', 'Atletico',
+    'Sevilla', 'Valencia', 'Athletic', 'Sociedad', 'Villarreal', 'Betis', 'Osasuna', 'Celta',
+    'Mallorca', 'Rayo', 'Alaves', 'Getafe', 'Granada', 'Cadiz', 'Almeria', 'Girona',
+    'Las Palmas', 'Liverpool', 'Manchester', 'Chelsea', 'Arsenal', 'Tottenham', 'Newcastle',
+    'Leicester', 'Everton', 'Wolves', 'West Ham', 'Aston Villa', 'Brighton', 'Brentford',
+    'Fulham', 'Crystal Palace', 'Bournemouth', 'Nottingham', 'Bayern', 'Dortmund', 'Leipzig',
+    'Leverkusen', 'Frankfurt', 'Stuttgart', 'Gladbach', 'Hoffenheim', 'Bremen', 'Augsburg',
+    'Wolfsburg', 'Freiburg', 'Union Berlin', 'Bochum', 'Darmstadt', 'Heidenheim', 'Koln',
+    'Mainz', 'PSG', 'Marseille', 'Lyon', 'Monaco', 'Lille', 'Rennes', 'Nice', 'Lens',
+    'Strasbourg', 'Nantes', 'Montpellier', 'Reims', 'Toulouse', 'Brest', 'Clermont', 'Lorient',
+    'Metz', 'Le Havre', 'Ajax', 'PSV', 'Feyenoord', 'AZ', 'Twente', 'Utrecht', 'Sparta',
+    'Heerenveen', 'NEC', 'Willem II', 'Go Ahead', 'Heracles', 'Fortuna', 'Volendam', 'Emmen',
+    'RKC', 'Excelsior', 'Almere', 'Jong', 'Young Boys', 'Basel', 'Luzern', 'St. Gallen',
+    'Sion', 'Lugano', 'Lausanne', 'Winterthur', 'Grasshopper', 'Servette', 'Zurich', 'Thun',
+    'Vaduz', 'Celtic', 'Rangers', 'Aberdeen', 'Hearts', 'Hibs', 'Kilmarnock', 'St Mirren',
+    'Motherwell', 'Ross County', 'St Johnstone', 'Livingston', 'Dundee'
+]
+
+# Golf tournaments
+GOLF_TOURNAMENTS = [
+    'Riviera Country Club', 'Pebble Beach', 'Augusta', 'PGA', 'Masters', 'Open',
+    'Tour Championship', 'Players Championship', 'Farmers Insurance', 'Genesis',
+    'Arnold Palmer', 'Memorial', 'WGC', 'DP World', 'Ryder Cup', 'Presidents Cup'
+]
+
+# Quarter indicators (team props)
+QUARTER_INDICATORS = ['1Q', '2Q', '3Q', '4Q', '1H', '2H']
+
+def is_real_player_name(name):
+    """Strict check for real player names - filter out everything else"""
+    if not name or len(name) < 3:
+        return False
+    
+    # Skip if it's a quarter prop (team stats)
+    for q in QUARTER_INDICATORS:
+        if q in name:
+            return False
+    
+    # Skip NBA team abbreviations
+    if name.upper() in NBA_TEAMS:
+        return False
+    if name.upper() in NHL_TEAMS:
+        return False
+    if name.upper() in MLB_TEAMS:
+        return False
+    
+    # Skip soccer teams
+    for team in SOCCER_TEAMS:
+        if team.lower() in name.lower():
+            return False
+    
+    # Skip golf tournaments
+    for tourney in GOLF_TOURNAMENTS:
+        if tourney.lower() in name.lower():
+            return False
+    
+    # Skip common team patterns
+    team_patterns = [' FC', ' United', ' City', ' Rovers', ' County', ' Albion', 
+                     ' Athletic', ' Wanderers', ' Town', ' Forest', ' Villa', 
+                     ' Palace', ' Hotspur', ' Ham', ' North End', ' Orient', 
+                     ' Vale', ' Dale', ' Star', ' Olympic', ' SZN', '2026']
+    
+    name_lower = name.lower()
+    for pattern in team_patterns:
+        if pattern.lower() in name_lower:
+            return False
+    
+    # Must have at least first and last name (contains a space)
+    if ' ' not in name:
+        return False
+    
+    # Check if it looks like a real person name (not all caps, not too short)
+    parts = name.split()
+    if len(parts) < 2:
+        return False
+    
+    # Each part should be at least 2 chars
+    for part in parts:
+        if len(part) < 2:
+            return False
+    
+    return True
+
+# ===================================================
+# SPORT MAPPING
+# ===================================================
+
+def detect_sport(league_id, player_name):
+    """Detect sport based on league ID or player name"""
+    
+    # First try league ID
+    league_map = {
+        '7': 'NBA', '192': 'NBA', '4': 'NBA',
+        '8': 'NHL', '3': 'NHL',
+        '1': 'MLB', '43': 'MLB', '190': 'MLB',
+        '5': 'Tennis', '6': 'Tennis',
+        '12': 'MMA', '42': 'Boxing',
+        '265': 'Esports', '82': 'Esports', '80': 'Esports', '84': 'Esports',
+        '121': 'Esports', '145': 'Esports', '159': 'Esports', '161': 'Esports',
+        '174': 'Esports', '176': 'Esports', '383': 'Esports',
+        '284': 'Handball',
+        '131': 'Golf',
+        '277': 'Curling',
+        '288': 'Unrivaled',
+        '379': 'Olympic Hockey',
+    }
+    
+    if league_id in league_map:
+        return league_map[league_id]
+    
+    # If no league ID match, try to detect from name
+    name_lower = player_name.lower()
+    
+    # Tennis players
+    tennis_players = ['djokovic', 'nadal', 'federer', 'alcaraz', 'medvedev', 'tsitsipas',
+                      'zverev', 'rublev', 'ruud', 'sinner', 'auger', 'aliassime', 'fritz',
+                      'tiafoe', 'paul', 'shelton', 'korda', 'kyrgios', 'murray', 'wawrinka']
+    if any(player in name_lower for player in tennis_players):
+        return 'Tennis'
+    
+    # Golf players
+    golf_players = ['scheffler', 'mcilroy', 'rahm', 'spieth', 'thomas', 'cantlay',
+                    'schauffele', 'homa', 'fleetwood', 'hatton', 'lowry', 'rose',
+                    'day', 'scott', 'matsuyama', 'im', 'kim', 'morikawa', 'burns']
+    if any(player in name_lower for player in golf_players):
+        return 'Golf'
+    
+    # Soccer players
+    soccer_players = ['messi', 'ronaldo', 'haaland', 'mbappe', 'neymar', 'lewandowski',
+                      'kane', 'salah', 'de bruyne', 'modric', 'benzema', 'vinicius',
+                      'bellingham', 'pedri', 'gavi', 'musiala', 'wirtz', 'saka']
+    if any(player in name_lower for player in soccer_players):
+        return 'Soccer'
+    
+    return 'Other'
 
 def get_sport_emoji(sport):
     emojis = {
-        'NBA': '🏀',
-        'NHL': '🏒',
-        'MLB': '⚾',
-        'Soccer': '⚽',
-        'Other': '🏆'
+        'NBA': '🏀', 'NHL': '🏒', 'MLB': '⚾', 'Tennis': '🎾',
+        'Golf': '⛳', 'Soccer': '⚽', 'MMA': '🥊', 'Boxing': '🥊',
+        'Esports': '🎮', 'Handball': '🤾', 'Curling': '🥌',
+        'Olympic Hockey': '🏒', 'Unrivaled': '🏀', 'Other': '🏆'
     }
     return emojis.get(sport, '🏆')
 
 def get_badge_class(sport):
     classes = {
-        'NBA': 'badge-nba',
-        'NHL': 'badge-nhl',
-        'MLB': 'badge-mlb',
-        'Soccer': 'badge-soccer',
+        'NBA': 'badge-nba', 'NHL': 'badge-nhl', 'MLB': 'badge-mlb',
+        'Tennis': 'badge-tennis', 'Golf': 'badge-pga', 'Soccer': 'badge-soccer',
+        'MMA': 'badge-other', 'Boxing': 'badge-other', 'Esports': 'badge-other',
+        'Handball': 'badge-other', 'Curling': 'badge-other',
+        'Olympic Hockey': 'badge-nhl', 'Unrivaled': 'badge-nba',
         'Other': 'badge-other'
     }
     return f"badge {classes.get(sport, 'badge-other')}"
-
-# ===================================================
-# SIMPLE PLAYER NAME CHECK
-# ===================================================
-
-def is_player_name(name):
-    """Simple check - keep it basic for now"""
-    if not name or len(name) < 3:
-        return False
-    
-    # Skip obvious team codes
-    team_codes = ['ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 
-                  'HOU', 'IND', 'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK',
-                  'OKC', 'ORL', 'PHI', 'PHX', 'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS']
-    
-    if name.upper() in team_codes:
-        return False
-    
-    # Skip if it has "SZN" in it
-    if 'SZN' in name:
-        return False
-    
-    return True
 
 # ===================================================
 # API FUNCTIONS
@@ -286,13 +389,13 @@ def fetch_prizepicks_projections():
         
         if response.status_code == 200:
             return response.json()
-        else:
-            return None
+        return None
     except:
         return None
 
 @st.cache_data(ttl=300)
-def get_all_projections():
+def get_player_projections():
+    """Get ONLY player props - no teams, no quarters, no tournaments"""
     data = fetch_prizepicks_projections()
     
     if not data:
@@ -301,9 +404,17 @@ def get_all_projections():
             {'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points', 'league_id': '7'},
             {'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points', 'league_id': '7'},
             {'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points', 'league_id': '7'},
+            {'player_name': 'Giannis Antetokounmpo', 'line': 32.5, 'stat_type': 'PRA', 'league_id': '7'},
+            {'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA', 'league_id': '7'},
+            {'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points', 'league_id': '8'},
+            {'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals', 'league_id': '8'},
+            {'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals', 'league_id': '5'},
+            {'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score', 'league_id': '131'},
+            {'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games', 'league_id': '5'},
         ])
     
     projections = []
+    filtered_count = 0
     
     for item in data.get('data', []):
         try:
@@ -313,7 +424,12 @@ def get_all_projections():
                 continue
             
             player_name = (attrs.get('name') or attrs.get('description') or '').strip()
-            if not player_name or not is_player_name(player_name):
+            if not player_name:
+                continue
+            
+            # STRICT filtering - only keep real player names
+            if not is_real_player_name(player_name):
+                filtered_count += 1
                 continue
             
             league_id = 'default'
@@ -321,7 +437,7 @@ def get_all_projections():
             if league_rel:
                 league_id = str(league_rel.get('id', 'default'))
             
-            sport = get_sport_name(league_id)
+            sport = detect_sport(league_id, player_name)
             
             projections.append({
                 'sport': sport,
@@ -335,21 +451,38 @@ def get_all_projections():
         except:
             continue
     
-    return pd.DataFrame(projections)
+    df = pd.DataFrame(projections)
+    st.session_state.filtered_count = filtered_count
+    
+    return df
 
 # ===================================================
 # HIT RATE CALCULATOR
 # ===================================================
 
 def calculate_hit_rate(line, sport):
-    base_rate = 0.52 if sport == 'NBA' else 0.51
+    base_rates = {
+        'NBA': 0.52,
+        'NHL': 0.51,
+        'MLB': 0.53,
+        'Tennis': 0.50,
+        'Golf': 0.48,
+        'Soccer': 0.50,
+        'MMA': 0.49,
+        'Boxing': 0.49,
+        'Esports': 0.52,
+    }
+    
+    base_rate = base_rates.get(sport, 0.51)
     
     if line > 30:
         factor = 0.96
     elif line > 20:
         factor = 0.98
-    else:
+    elif line > 10:
         factor = 1.0
+    else:
+        factor = 1.02
     
     hit_rate = base_rate * factor
     hit_rate = min(hit_rate, 0.65)
@@ -363,7 +496,7 @@ def calculate_hit_rate(line, sport):
 
 current_time = get_central_time()
 
-st.markdown('<p class="main-header">🏀 PrizePicks Player Props</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🏀 PrizePicks Player Props Only</p>', unsafe_allow_html=True)
 
 # Status bar
 col1, col2, col3 = st.columns(3)
@@ -391,11 +524,11 @@ with st.sidebar:
         st.rerun()
 
 # Load data
-with st.spinner("Loading props..."):
-    df = get_all_projections()
+with st.spinner("Loading player props..."):
+    df = get_player_projections()
 
 if df.empty:
-    st.error("No data loaded")
+    st.error("No player props loaded")
     st.stop()
 
 # Calculate hit rates
@@ -404,9 +537,11 @@ df['recommendation'] = df['hit_rate'].apply(lambda x: 'MORE' if x > 0.5415 else 
 df = df.sort_values('hit_rate', ascending=False)
 
 # Sidebar stats
-st.sidebar.markdown(f"**Total Props:** {len(df):,}")
+st.sidebar.markdown(f"**Player Props:** {len(df):,}")
 st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
+if 'filtered_count' in st.session_state:
+    st.sidebar.markdown(f"**Filtered Out:** {st.session_state.filtered_count:,} (teams/quarters)")
 
 # Show sports
 with st.sidebar.expander("📊 Sports", expanded=True):
@@ -418,7 +553,7 @@ with st.sidebar.expander("📊 Sports", expanded=True):
 col_left, col_right = st.columns([1.3, 0.7])
 
 with col_left:
-    st.markdown('<p class="section-header">📋 Available Props</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-header">📋 Available Player Props</p>', unsafe_allow_html=True)
     
     # Sport filter
     sports_list = sorted(df['sport'].unique())
@@ -432,7 +567,7 @@ with col_left:
     if st.session_state.show_recommended:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
-    st.caption(f"**Showing {len(filtered_df)} of {len(df)} props**")
+    st.caption(f"**Showing {len(filtered_df)} of {len(df)} player props**")
     
     # Auto-select
     if st.session_state.auto_select and len(st.session_state.picks) == 0 and len(filtered_df) >= num_legs:
@@ -545,15 +680,16 @@ with col_right:
             st.session_state.picks = []
             st.rerun()
     else:
-        st.info("👆 Add props from the left panel")
+        st.info("👆 Add player props from the left panel")
 
 # Footer
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} props loaded | 
+    <p>🏀 {len(df):,} player props | 
     <span style='color:#2E7D32;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
     <span style='color:#C62828;'>{len(df[df['recommendation']=='LESS']):,} LESS</span>
     </p>
+    <p style='font-size:0.8rem;'>Filtered out {st.session_state.get('filtered_count', 0):,} team/quarter props</p>
 </div>
 """, unsafe_allow_html=True)
