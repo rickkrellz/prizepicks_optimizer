@@ -6,6 +6,7 @@ from datetime import datetime
 import time
 import random
 import pytz
+import re
 
 # Page config
 st.set_page_config(
@@ -99,6 +100,17 @@ st.markdown("""
         text-align: center;
     }
     
+    .team-name {
+        font-size: 0.9rem;
+        color: #FFD700;
+        margin-left: 5px;
+    }
+    
+    .player-name {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    
     .stat-line {
         background-color: #ECF0F1;
         color: #2C3E50;
@@ -140,45 +152,71 @@ if 'auto_select' not in st.session_state:
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
 
-# League mapping (from your working version)
+# League mapping
 LEAGUE_MAPPING = {
-    '7': 'NBA',
-    '192': 'NBA',
-    '8': 'NHL',
-    '3': 'NHL',
-    '1': 'MLB',
-    '43': 'MLB',
-    '190': 'MLB',
+    '7': 'NBA', '192': 'NBA',
+    '8': 'NHL', '3': 'NHL',
+    '1': 'MLB', '43': 'MLB', '190': 'MLB',
     '5': 'Tennis',
-    '6': 'Soccer',
-    '44': 'Soccer',
-    '45': 'Soccer',
-    '82': 'Esports',
-    '265': 'Esports',
-    '80': 'Esports',
-    '84': 'Esports',
-    '121': 'Esports',
-    '145': 'Esports',
-    '159': 'Esports',
-    '161': 'Esports',
-    '174': 'Esports',
-    '176': 'Esports',
-    '383': 'Esports',
+    '6': 'Soccer', '44': 'Soccer', '45': 'Soccer',
+    '82': 'Esports', '265': 'Esports', '80': 'Esports', '84': 'Esports',
+    '121': 'Esports', '145': 'Esports', '159': 'Esports', '161': 'Esports',
+    '174': 'Esports', '176': 'Esports', '383': 'Esports',
     '131': 'Golf',
-    '20': 'CBB',
-    '290': 'CBB',
-    '4': 'NASCAR',
-    '9': 'NASCAR',
-    '22': 'NASCAR',
-    '12': 'MMA',
-    '42': 'Boxing',
+    '20': 'CBB', '290': 'CBB',
+    '4': 'NASCAR', '9': 'NASCAR', '22': 'NASCAR',
+    '12': 'MMA', '42': 'Boxing',
     '284': 'Handball',
     '288': 'Unrivaled',
     '277': 'Curling',
     '379': 'Olympic Hockey',
 }
 
-# Simple API call
+# NBA team mapping for better display
+NBA_TEAMS = {
+    'ATL': 'Hawks', 'BOS': 'Celtics', 'BKN': 'Nets', 'CHA': 'Hornets', 'CHI': 'Bulls',
+    'CLE': 'Cavaliers', 'DAL': 'Mavericks', 'DEN': 'Nuggets', 'DET': 'Pistons', 'GSW': 'Warriors',
+    'HOU': 'Rockets', 'IND': 'Pacers', 'LAC': 'Clippers', 'LAL': 'Lakers', 'MEM': 'Grizzlies',
+    'MIA': 'Heat', 'MIL': 'Bucks', 'MIN': 'Timberwolves', 'NOP': 'Pelicans', 'NYK': 'Knicks',
+    'OKC': 'Thunder', 'ORL': 'Magic', 'PHI': '76ers', 'PHX': 'Suns', 'POR': 'Trail Blazers',
+    'SAC': 'Kings', 'SAS': 'Spurs', 'TOR': 'Raptors', 'UTA': 'Jazz', 'WAS': 'Wizards'
+}
+
+def extract_team_info(player_name, sport):
+    """Extract team information from player name"""
+    # Check if it's a team code
+    if len(player_name) == 3 and player_name.isupper():
+        if sport == 'NBA' and player_name in NBA_TEAMS:
+            return f"{player_name} {NBA_TEAMS[player_name]}", player_name
+        return f"{player_name} Team", player_name
+    return player_name, None
+
+def calculate_hit_rate(line, sport):
+    """Calculate hit rate with more variation"""
+    base_rates = {
+        'NBA': 0.52, 'NHL': 0.51, 'MLB': 0.53, 'Tennis': 0.50,
+        'Soccer': 0.50, 'Golf': 0.48, 'Esports': 0.52, 'CBB': 0.51,
+        'NASCAR': 0.50, 'MMA': 0.49, 'Boxing': 0.49
+    }
+    base_rate = base_rates.get(sport, 0.51)
+    
+    # More randomness to get both MORE and LESS
+    random_factor = random.uniform(0.92, 1.08)
+    
+    # Line adjustment
+    if line > 30:
+        line_factor = 0.96
+    elif line > 20:
+        line_factor = 0.98
+    elif line > 10:
+        line_factor = 1.0
+    else:
+        line_factor = 1.02
+    
+    hit_rate = base_rate * line_factor * random_factor
+    return min(max(hit_rate, 0.35), 0.68)
+
+# API call
 @st.cache_data(ttl=300)
 def fetch_prizepicks_projections():
     url = "https://api.prizepicks.com/projections"
@@ -225,14 +263,23 @@ def get_all_projections():
             
             sport = LEAGUE_MAPPING.get(league_id, 'Other')
             
-            # Simple emoji mapping
-            emoji = '🏀' if sport == 'NBA' else '🏒' if sport == 'NHL' else '⚾' if sport == 'MLB' else '🎾' if sport == 'Tennis' else '⚽' if sport == 'Soccer' else '⛳' if sport == 'Golf' else '🎮' if sport == 'Esports' else '🏎️' if sport == 'NASCAR' else '🏆'
+            # Get team info
+            display_name, team_code = extract_team_info(player_name, sport)
+            
+            # Emoji mapping
+            emoji = {
+                'NBA': '🏀', 'NHL': '🏒', 'MLB': '⚾', 'Tennis': '🎾',
+                'Soccer': '⚽', 'Golf': '⛳', 'Esports': '🎮', 'CBB': '🏀',
+                'NASCAR': '🏎️', 'MMA': '🥊', 'Boxing': '🥊', 'Other': '🏆'
+            }.get(sport, '🏆')
             
             projections.append({
                 'league_id': league_id,
                 'sport': sport,
                 'emoji': emoji,
                 'player_name': player_name,
+                'display_name': display_name,
+                'team_code': team_code,
                 'line': float(line_score),
                 'stat_type': attrs.get('stat_type', 'Unknown'),
             })
@@ -242,20 +289,13 @@ def get_all_projections():
     st.session_state.league_counts = league_counts
     return pd.DataFrame(projections)
 
-# Hit rate calculator
-def calculate_hit_rate(line, sport):
-    base_rate = 0.52 if sport == 'NBA' else 0.51 if sport == 'NHL' else 0.53 if sport == 'MLB' else 0.50
-    random_factor = random.uniform(0.96, 1.04)
-    hit_rate = base_rate * random_factor
-    return min(max(hit_rate, 0.35), 0.65)
-
 # Main app
 current_time = get_central_time()
 
 st.markdown('<p class="main-header">🏀 PrizePicks Player Props</p>', unsafe_allow_html=True)
 
 # Status
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([3, 1])
 with col1:
     st.markdown(f"**Last Updated:** {current_time.strftime('%I:%M:%S %p CT')}")
 with col2:
@@ -289,6 +329,8 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown(f"**Total Props:** {len(df):,}")
+    st.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
+    st.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
     
     # League distribution
     st.markdown("### 📊 League Distribution")
@@ -332,6 +374,8 @@ with col_left:
                     'emoji': row['emoji'],
                     'sport': row['sport'],
                     'player': row['player_name'],
+                    'display_name': row['display_name'],
+                    'team_code': row['team_code'],
                     'stat': row['stat_type'],
                     'line': row['line'],
                     'pick': row['recommendation'],
@@ -341,21 +385,27 @@ with col_left:
     
     # Display props
     for idx, row in filtered_df.head(30).iterrows():
-        hit_class = "hit-high" if row['hit_rate'] > 0.5415 else "hit-low"
-        
         with st.container():
+            # Build display string
+            if row['team_code']:
+                display_text = f"{row['display_name']}"
+            else:
+                display_text = row['player_name']
+            
             st.markdown(f"""
             <div class='prop-card'>
                 <div style='display: flex; justify-content: space-between; align-items: center;'>
                     <div>
                         <span style='font-size:1.2rem;'>{row['emoji']}</span>
-                        <strong>{row['player_name']}</strong>
+                        <span class='player-name'>{display_text}</span>
                         <span class='badge badge-other'>{row['sport']}</span>
                     </div>
-                    <span style='font-weight:bold;'>{row['hit_rate']*100:.1f}%</span>
+                    <span style='font-weight:bold; color:{"#2E7D32" if row["hit_rate"]>0.5415 else "#C62828"};'>
+                        {row['hit_rate']*100:.1f}%
+                    </span>
                 </div>
                 <div class='stat-line'>{row['stat_type']}: {row['line']:.1f}</div>
-                <div style='display:flex; gap:10px; align-items:center;'>
+                <div style='display:flex; gap:10px; align-items:center; margin-top:8px;'>
                     <span class='{"more-badge" if row["recommendation"]=="MORE" else "less-badge"}'>
                         {row['recommendation']}
                     </span>
@@ -367,6 +417,7 @@ with col_left:
                         'emoji': row['emoji'],
                         'sport': row['sport'],
                         'player': row['player_name'],
+                        'display_name': display_text,
                         'stat': row['stat_type'],
                         'line': row['line'],
                         'pick': row['recommendation'],
@@ -385,13 +436,16 @@ with col_right:
                 st.markdown(f"""
                 <div class='prop-card'>
                     <div style='display:flex; justify-content:space-between;'>
-                        <span>{pick['emoji']} <strong>{pick['player']}</strong></span>
+                        <div>
+                            <span>{pick['emoji']}</span>
+                            <strong>{pick['display_name']}</strong>
+                        </div>
                         <span class='{"more-badge" if pick["pick"]=="MORE" else "less-badge"}' style='padding:0.2rem 0.5rem; font-size:0.8rem;'>
                             {pick['pick']}
                         </span>
                     </div>
                     <div>{pick['stat']} {pick['line']:.1f}</div>
-                    <div style='color:{"#2E7D32" if pick["hit_rate"]>0.5415 else "#C62828"};'>
+                    <div style='color:{"#2E7D32" if pick["hit_rate"]>0.5415 else "#C62828"}; margin-top:5px;'>
                         Hit rate: {pick['hit_rate']*100:.1f}%
                     </div>
                 """, unsafe_allow_html=True)
@@ -412,6 +466,9 @@ with col_right:
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} total props</p>
+    <p>🏀 {len(df):,} total props | 
+    <span style='color:#2E7D32;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
+    <span style='color:#C62828;'>{len(df[df['recommendation']=='LESS']):,} LESS</span>
+    </p>
 </div>
 """, unsafe_allow_html=True)
