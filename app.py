@@ -4,10 +4,11 @@ import requests
 from datetime import datetime
 import time
 import pytz
+import json
 
 # Page config
 st.set_page_config(
-    page_title="PrizePicks Debug",
+    page_title="PrizePicks API Debug",
     page_icon="🔍",
     layout="wide"
 )
@@ -28,6 +29,7 @@ st.markdown("""
         font-size: 2rem;
         color: #1E88E5;
         text-align: center;
+        margin-bottom: 2rem;
     }
     .debug-box {
         background-color: #1E1E1E;
@@ -36,156 +38,204 @@ st.markdown("""
         border-radius: 5px;
         font-family: monospace;
         white-space: pre-wrap;
+        max-height: 400px;
+        overflow: auto;
     }
-    .success { color: #00FF00; }
-    .error { color: #FF0000; }
+    .success { color: #00FF00; font-weight: bold; }
+    .error { color: #FF0000; font-weight: bold; }
+    .warning { color: #FFA500; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<p class="main-header">🔍 PrizePicks API Debug Tool</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🔍 PrizePicks API Debug Tool - Advanced</p>', unsafe_allow_html=True)
 st.markdown(f"**Current Time:** {get_central_time().strftime('%I:%M:%S %p CT')}")
 
-# Function to test API with different headers
-def test_api(headers_version=1):
-    url = "https://api.prizepicks.com/projections"
-    
-    headers_options = {
-        1: {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-            'Accept': 'application/json',
-        },
-        2: {
-            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-US,en;q=0.9',
-        },
-        3: {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15',
-            'Accept': 'application/json',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://app.prizepicks.com/',
-        },
-        4: {
-            'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Referer': 'https://app.prizepicks.com/',
-            'Origin': 'https://app.prizepicks.com',
-            'Connection': 'keep-alive',
-        }
-    }
-    
-    headers = headers_options.get(headers_version, headers_options[1])
-    
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        return {
-            'status_code': response.status_code,
-            'headers': dict(response.headers),
-            'content_length': len(response.content) if response.content else 0,
-            'success': response.status_code == 200
-        }
-    except Exception as e:
-        return {
-            'error': str(e),
-            'success': False
-        }
+# Instructions
+st.info("""
+📱 **On your iPad:**
+1. Open Safari and go to: https://api.prizepicks.com/projections
+2. When the page loads, tap the 'Share' button (box with arrow)
+3. Scroll down and tap 'Copy'
+4. Come back here and paste below
+""")
 
-# Test buttons
-col1, col2, col3, col4 = st.columns(4)
+# Text area for pasting headers
+pasted_content = st.text_area("Paste copied content here:", height=200)
+
+if pasted_content:
+    st.markdown("### 📋 Pasted Content Preview:")
+    st.markdown(f'<div class="debug-box">{pasted_content[:500]}</div>', unsafe_allow_html=True)
+    
+    # Try to extract any useful information
+    st.markdown("### 🔍 Analysis:")
+    
+    # Check if it looks like JSON
+    try:
+        json_data = json.loads(pasted_content)
+        st.success("✅ This appears to be JSON data!")
+        st.json(json_data)
+    except:
+        st.warning("⚠️ This doesn't appear to be JSON data")
+        
+        # Look for potential headers
+        lines = pasted_content.split('\n')
+        for line in lines[:20]:
+            if ':' in line and any(key in line.lower() for key in ['user-agent', 'accept', 'cookie', 'referer']):
+                st.write(f"Found header-like line: {line}")
+
+# Manual header tester
+st.markdown("---")
+st.markdown("### 🧪 Manual Header Tester")
+
+col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("Test Headers v1"):
-        result = test_api(1)
-        st.session_state.last_test = result
-        st.session_state.headers_used = 1
+    custom_ua = st.text_input("User-Agent", value="Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1")
+    custom_accept = st.text_input("Accept", value="application/json")
+    custom_referer = st.text_input("Referer", value="https://app.prizepicks.com/")
 
 with col2:
-    if st.button("Test Headers v2"):
-        result = test_api(2)
-        st.session_state.last_test = result
-        st.session_state.headers_used = 2
+    custom_origin = st.text_input("Origin", value="https://app.prizepicks.com")
+    custom_accept_lang = st.text_input("Accept-Language", value="en-US,en;q=0.9")
+    custom_connection = st.text_input("Connection", value="keep-alive")
 
+# Additional headers as checkboxes
+st.markdown("#### Additional Headers:")
+col3, col4, col5 = st.columns(3)
 with col3:
-    if st.button("Test Headers v3"):
-        result = test_api(3)
-        st.session_state.last_test = result
-        st.session_state.headers_used = 3
-
+    add_sec_fetch = st.checkbox("Add Sec-Fetch headers", value=True)
 with col4:
-    if st.button("Test Headers v4"):
-        result = test_api(4)
-        st.session_state.last_test = result
-        st.session_state.headers_used = 4
+    add_cache = st.checkbox("Add Cache-Control", value=False)
+with col5:
+    add_cookie = st.checkbox("Add Cookie (if you have one)", value=False)
 
-# Display results
-if 'last_test' in st.session_state:
-    st.markdown("---")
-    st.subheader(f"Test Results (Headers v{st.session_state.headers_used})")
-    
-    result = st.session_state.last_test
-    
-    if result.get('success'):
-        st.markdown(f"<p class='success'>✅ SUCCESS! Status Code: {result['status_code']}</p>", unsafe_allow_html=True)
-        st.markdown(f"Content Length: {result['content_length']} bytes")
-    else:
-        st.markdown(f"<p class='error'>❌ FAILED</p>", unsafe_allow_html=True)
-        if 'status_code' in result:
-            st.markdown(f"Status Code: {result['status_code']}")
-        if 'error' in result:
-            st.markdown(f"Error: {result['error']}")
-    
-    with st.expander("View Response Headers"):
-        st.json(result.get('headers', {}))
+if add_cookie and add_cookie:
+    cookie_value = st.text_input("Cookie value:", type="password")
 
-# Try to fetch and display sample data if successful
-if 'last_test' in st.session_state and st.session_state.last_test.get('success'):
-    st.markdown("---")
-    st.subheader("Attempting to fetch data...")
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://app.prizepicks.com/',
-        'Origin': 'https://app.prizepicks.com',
-    }
-    
-    try:
-        response = requests.get("https://api.prizepicks.com/projections", headers=headers, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            st.success(f"✅ Successfully fetched data! Found {len(data.get('data', []))} items")
+# Build headers
+headers = {
+    'User-Agent': custom_ua,
+    'Accept': custom_accept,
+}
+
+if custom_referer:
+    headers['Referer'] = custom_referer
+if custom_origin:
+    headers['Origin'] = custom_origin
+if custom_accept_lang:
+    headers['Accept-Language'] = custom_accept_lang
+if custom_connection:
+    headers['Connection'] = custom_connection
+if add_sec_fetch:
+    headers['Sec-Fetch-Dest'] = 'empty'
+    headers['Sec-Fetch-Mode'] = 'cors'
+    headers['Sec-Fetch-Site'] = 'same-site'
+if add_cache:
+    headers['Cache-Control'] = 'no-cache'
+if add_cookie and add_cookie and 'cookie_value' in locals():
+    headers['Cookie'] = cookie_value
+
+# Show headers being used
+with st.expander("📤 Headers being sent:", expanded=True):
+    st.json(headers)
+
+# Test button
+if st.button("🚀 Test with these headers", type="primary"):
+    with st.spinner("Testing API connection..."):
+        try:
+            # Add small delay
+            time.sleep(1)
             
-            # Show sample
-            if data.get('data'):
-                st.markdown("### First Item Sample:")
-                st.json(data['data'][0])
+            # Make request
+            response = requests.get(
+                "https://api.prizepicks.com/projections", 
+                headers=headers, 
+                timeout=15
+            )
+            
+            # Show results
+            st.markdown("---")
+            st.markdown("### 📊 Test Results")
+            
+            col_status, col_size = st.columns(2)
+            with col_status:
+                if response.status_code == 200:
+                    st.markdown(f"<p class='success'>✅ Status: {response.status_code}</p>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<p class='error'>❌ Status: {response.status_code}</p>", unsafe_allow_html=True)
+            
+            with col_size:
+                st.markdown(f"**Response Size:** {len(response.content):,} bytes")
+            
+            # Show response headers
+            with st.expander("📥 Response Headers"):
+                st.json(dict(response.headers))
+            
+            # Try to parse response
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    st.success(f"✅ Successfully parsed JSON! Found {len(data.get('data', []))} items")
+                    
+                    # Show sample
+                    if data.get('data'):
+                        st.markdown("#### First Item Sample:")
+                        st.json(data['data'][0])
+                        
+                        # Extract league IDs
+                        league_ids = set()
+                        for item in data['data'][:50]:
+                            try:
+                                league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
+                                if league_rel:
+                                    league_ids.add(league_rel.get('id'))
+                            except:
+                                pass
+                        
+                        if league_ids:
+                            st.markdown("#### League IDs Found:")
+                            st.write(sorted(league_ids))
+                            
+                except Exception as e:
+                    st.error(f"Error parsing JSON: {e}")
+                    st.text(response.text[:500])
+            else:
+                st.error(f"Response content: {response.text[:500]}")
                 
-                # Extract unique league IDs
-                league_ids = set()
-                for item in data['data'][:100]:  # Check first 100
-                    try:
-                        league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
-                        if league_rel:
-                            league_ids.add(league_rel.get('id'))
-                    except:
-                        pass
-                
-                if league_ids:
-                    st.markdown("### League IDs Found:")
-                    st.write(sorted(league_ids))
-        else:
-            st.error(f"Failed to fetch data: {response.status_code}")
-    except Exception as e:
-        st.error(f"Error: {e}")
+        except Exception as e:
+            st.error(f"Request failed: {e}")
+
+# Save working configuration
+if 'working_headers' in st.session_state:
+    st.markdown("---")
+    st.markdown("### ✅ Working Configuration Found!")
+    st.markdown("Copy these headers into your main app:")
+    st.code(f"""
+headers = {{
+    'User-Agent': '{st.session_state.working_headers.get("User-Agent", "")}',
+    'Accept': '{st.session_state.working_headers.get("Accept", "")}',
+    'Referer': '{st.session_state.working_headers.get("Referer", "")}',
+    'Origin': '{st.session_state.working_headers.get("Origin", "")}',
+    'Accept-Language': '{st.session_state.working_headers.get("Accept-Language", "")}',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+}}
+    """)
 
 # Instructions
 st.markdown("---")
 st.markdown("""
-### 📝 Instructions:
-1. Click each header version button to test different combinations
-2. Look for a **200 status code** (success)
-3. Once successful, the app will show sample data and league IDs
-4. Note which header version works - we'll use that in the main app
+### 📝 How to use this tool:
+
+1. **Open Safari on your iPad** and go to: `https://api.prizepicks.com/projections`
+2. **When the JSON loads**, tap the share button and select "Copy"
+3. **Paste the content** in the text area above - this will show us what the API returns when accessed directly
+4. **Use the manual tester** to try different header combinations
+5. **When you find headers that work** (status 200), the configuration will be saved
+
+If you get a 403 error, try:
+- Adding/removing different headers
+- Matching exactly what your iPad sends
+- Adding cookies if you're logged into PrizePicks on your iPad
 """)
