@@ -196,7 +196,6 @@ def fetch_sportsbook_lines(sport="basketball_nba"):
         if response.status_code == 200:
             return response.json()
         else:
-            st.sidebar.info(f"📊 Using default odds - API limit may be reached")
             return None
     except:
         return None
@@ -309,7 +308,7 @@ def calculate_projected_hit_rate(line, sport, stat_type, injury_status, sportsbo
     return hit_rate, recommendation, confidence
 
 # ===================================================
-# FIXED PRIZEPICKS API - Now works like iPad browser
+# FIXED PRIZEPICKS API - Now with proper data extraction
 # ===================================================
 
 @st.cache_data(ttl=300)
@@ -338,14 +337,13 @@ def fetch_prizepicks_projections():
         
         # Check if we got a successful response
         if response.status_code == 200:
-            st.sidebar.success("✅ Connected to PrizePicks live data")
             return response.json()
         else:
-            st.sidebar.warning(f"API returned status code: {response.status_code} - using sample data")
+            st.sidebar.warning(f"API returned status code: {response.status_code}")
             return None
             
     except requests.exceptions.Timeout:
-        st.sidebar.warning("API request timed out - using sample data")
+        st.sidebar.warning("API request timed out")
         return None
     except requests.exceptions.RequestException as e:
         st.sidebar.warning(f"API request failed: {e}")
@@ -366,16 +364,13 @@ def get_all_sports_projections():
     
     projections = []
     
+    # Debug: Show total items
+    total_items = len(data.get('data', []))
+    st.sidebar.write(f"📡 API returned {total_items} total items")
+    
     for item in data.get('data', []):
         try:
-            # Get league info
-            league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
-            league_id = str(league_rel.get('id')) if league_rel else 'default'
-            
-            # Get sport info from mapping
-            sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
-            
-            # Get attributes
+            # Get attributes - this is where player info lives
             attrs = item.get('attributes', {})
             
             # Skip if no line score
@@ -383,36 +378,72 @@ def get_all_sports_projections():
             if line_score is None:
                 continue
             
+            # Get player name - try different possible fields
+            player_name = attrs.get('name', '')
+            if not player_name:
+                player_name = attrs.get('description', '')
+            if not player_name:
+                player_name = attrs.get('display_name', '')
+            
+            player_name = player_name.strip()
+            if not player_name:
+                continue
+            
+            # Get league info from relationships
+            league_id = 'default'
+            league_rel = item.get('relationships', {}).get('league', {}).get('data', {})
+            if league_rel:
+                league_id = str(league_rel.get('id', 'default'))
+            
+            # Get sport info from mapping
+            sport_info = SPORT_MAPPING.get(league_id, SPORT_MAPPING['default'])
+            
+            # Get stat type
+            stat_type = attrs.get('stat_type', '')
+            if not stat_type:
+                stat_type = attrs.get('stat_display_name', 'Unknown')
+            
+            # Get start time
+            start_time = attrs.get('start_time', '')
+            
             # Create projection entry
             proj = {
                 'id': item.get('id'),
                 'league_id': league_id,
                 'sport': sport_info['name'],
                 'sport_emoji': sport_info['emoji'],
-                'player_name': attrs.get('description', '').strip(),
+                'player_name': player_name,
                 'line': float(line_score),
-                'stat_type': attrs.get('stat_type', ''),
-                'start_time': attrs.get('start_time', ''),
+                'stat_type': stat_type,
+                'start_time': start_time,
                 'game_id': attrs.get('game_id', ''),
                 'status': attrs.get('status', ''),
                 'is_live': attrs.get('is_live', False),
             }
             
-            # Only include valid players with positive lines
-            if proj['player_name'] and proj['line'] > 0:
-                projections.append(proj)
+            projections.append(proj)
                 
         except Exception as e:
             continue
     
     df = pd.DataFrame(projections)
     
-    # Add placeholder columns
     if not df.empty:
-        df['time'] = 'Today'
-        st.sidebar.success(f"✅ Loaded {len(df)} live props from PrizePicks")
+        st.sidebar.success(f"✅ Processed {len(df)} props")
+        
+        # Show sport breakdown
+        sport_counts = df['sport'].value_counts()
+        with st.sidebar.expander("📊 Props by Sport"):
+            for sport, count in sport_counts.items():
+                st.write(f"{sport}: {count}")
+        
+        # Show sample of NBA props if available
+        nba_df = df[df['sport'] == 'NBA Basketball']
+        if not nba_df.empty:
+            with st.sidebar.expander("🏀 Sample NBA Props"):
+                st.write(nba_df[['player_name', 'stat_type', 'line']].head(5))
     else:
-        st.sidebar.warning("No data received from API")
+        st.sidebar.warning("No props could be processed from API")
     
     return df
 
@@ -423,7 +454,7 @@ def get_projections_with_fallback():
     
     # If API returns empty, use comprehensive sample data
     if df.empty:
-        st.sidebar.info("📊 Using sample data - PrizePicks API unavailable")
+        st.sidebar.info("📊 Using sample data - PrizePicks API returned no data")
         
         # Comprehensive sample data across all sports
         sample_data = [
@@ -438,31 +469,10 @@ def get_projections_with_fallback():
             {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points', 'team': 'GSW'},
             {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA', 'team': 'DAL'},
             {'sport': 'NBA Basketball', 'sport_emoji': '🏀', 'player_name': 'Shai Gilgeous-Alexander', 'line': 32.5, 'stat_type': 'PRA', 'team': 'OKC'},
-            # NFL
-            {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Patrick Mahomes', 'line': 275.5, 'stat_type': 'Passing Yards', 'team': 'KC'},
-            {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Travis Kelce', 'line': 75.5, 'stat_type': 'Receiving Yards', 'team': 'KC'},
-            {'sport': 'NFL Football', 'sport_emoji': '🏈', 'player_name': 'Christian McCaffrey', 'line': 110.5, 'stat_type': 'Rush+Yds', 'team': 'SF'},
-            # MLB
-            {'sport': 'MLB Baseball', 'sport_emoji': '⚾', 'player_name': 'Shohei Ohtani', 'line': 1.5, 'stat_type': 'Hits', 'team': 'LAD'},
-            {'sport': 'MLB Baseball', 'sport_emoji': '⚾', 'player_name': 'Aaron Judge', 'line': 0.5, 'stat_type': 'Home Runs', 'team': 'NYY'},
-            # NHL
-            {'sport': 'NHL Hockey', 'sport_emoji': '🏒', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points', 'team': 'EDM'},
-            {'sport': 'NHL Hockey', 'sport_emoji': '🏒', 'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals', 'team': 'TOR'},
-            # Soccer
-            {'sport': 'Soccer', 'sport_emoji': '⚽', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals', 'team': 'MIA'},
-            {'sport': 'Soccer', 'sport_emoji': '⚽', 'player_name': 'Erling Haaland', 'line': 1.5, 'stat_type': 'Shots', 'team': 'MCI'},
-            # Golf
-            {'sport': 'Golf', 'sport_emoji': '🏌️', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score', 'team': 'USA'},
-            {'sport': 'Golf', 'sport_emoji': '🏌️', 'player_name': 'Rory McIlroy', 'line': 69.5, 'stat_type': 'Round Score', 'team': 'NIR'},
-            # MMA
-            {'sport': 'MMA/UFC', 'sport_emoji': '🥊', 'player_name': 'Jon Jones', 'line': 45.5, 'stat_type': 'Significant Strikes', 'team': 'USA'},
-            {'sport': 'MMA/UFC', 'sport_emoji': '🥊', 'player_name': 'Israel Adesanya', 'line': 2.5, 'stat_type': 'Takedowns', 'team': 'NZL'},
-            # Esports
-            {'sport': 'Esports', 'sport_emoji': '🎮', 'player_name': 'Faker', 'line': 5.5, 'stat_type': 'Kills', 'team': 'T1'},
-            {'sport': 'Esports', 'sport_emoji': '🎮', 'player_name': 'Doublelift', 'line': 4.5, 'stat_type': 'Assists', 'team': '100T'},
         ]
         
         df = pd.DataFrame(sample_data)
+        st.sidebar.success(f"✅ Loaded {len(df)} sample props")
     
     # Add placeholder columns
     if not df.empty:
@@ -502,14 +512,12 @@ with st.sidebar:
     
     st.session_state.auto_select = st.checkbox(
         "Auto-select best picks",
-        value=True,
-        help="Automatically fill entry with top props"
+        value=True
     )
     
     st.session_state.show_recommended = st.checkbox(
         "Show only recommended picks",
-        value=True,
-        help="Only show props with hit rate > 54.15%"
+        value=True
     )
     
     st.markdown("---")
@@ -522,6 +530,21 @@ with st.sidebar:
     st.markdown("🟡 **Questionable** - 20% reduction")
     st.markdown("🟢 **Probable** - 5% reduction")
     st.markdown("⚪ **Active** - No effect")
+    
+    # Debug section
+    with st.expander("🔧 Debug Info"):
+        if st.button("Test API Connection"):
+            test_data = fetch_prizepicks_projections()
+            if test_data:
+                st.success("✅ API connected")
+                items = test_data.get('data', [])
+                st.write(f"Total items: {len(items)}")
+                if items:
+                    st.write("First item keys:", list(items[0].keys()))
+                    attrs = items[0].get('attributes', {})
+                    st.write("Attributes keys:", list(attrs.keys()))
+            else:
+                st.error("❌ API failed")
     
     if st.button("🔄 Refresh Data", type="primary", use_container_width=True):
         st.cache_data.clear()
@@ -568,7 +591,7 @@ with col_left:
     selected_sports = st.multiselect(
         "Select Sports",
         sports_list,
-        default=['NBA Basketball']
+        default=['NBA Basketball'] if 'NBA Basketball' in sports_list else []
     )
     
     # Apply filters
@@ -577,11 +600,11 @@ with col_left:
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
     else:
-        # If no sports selected, show NBA as default
-        filtered_df = filtered_df[filtered_df['sport'] == 'NBA Basketball']
-        st.info("👆 Select a sport above or viewing NBA by default")
+        # If no sports selected, show message
+        st.info("👆 Select a sport above to view props")
+        filtered_df = pd.DataFrame()  # Empty dataframe
     
-    if st.session_state.show_recommended:
+    if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
     
     st.caption(f"**Found {len(filtered_df)} props**")
@@ -603,7 +626,7 @@ with col_left:
             })
         st.rerun()
     
-    # Display props - FIXED VERSION with proper badge rendering
+    # Display props
     for idx, row in filtered_df.head(15).iterrows():
         # Determine colors
         hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
@@ -614,7 +637,7 @@ with col_left:
         if row['injury_status']['status'] != 'Active':
             injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>"
         
-        # Create prop card with proper badge rendering
+        # Create prop card
         st.markdown(f"""
         <div class='pick-card'>
             <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
