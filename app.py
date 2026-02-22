@@ -124,6 +124,19 @@ st.markdown("""
         display: inline-block;
         margin-left: 0.5rem;
     }
+    /* Fix for mobile cutoff */
+    .row-widget {
+        overflow: visible !important;
+    }
+    .element-container {
+        overflow: visible !important;
+    }
+    /* Make columns stack better on mobile */
+    @media (max-width: 768px) {
+        .stCol {
+            min-width: auto !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -453,6 +466,10 @@ with col_left:
     
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
+    else:
+        # If no sports selected, show NBA as default
+        filtered_df = filtered_df[filtered_df['sport'] == 'NBA Basketball']
+        st.info("👆 Select a sport above or viewing NBA by default")
     
     if st.session_state.show_recommended:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
@@ -476,16 +493,18 @@ with col_left:
             })
         st.rerun()
     
-    # Display props
+    # Display props - FIXED VERSION
     for idx, row in filtered_df.head(15).iterrows():
         # Determine colors
         hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
         badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
         
         # Build injury badge if needed
-        injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>" if row['injury_status']['status'] != 'Active' else ""
+        injury_badge = ""
+        if row['injury_status']['status'] != 'Active':
+            injury_badge = f"<span class='injury-badge'>{row['injury_status']['status']}</span>"
         
-        # Create prop card
+        # Create prop card - CLEAN VERSION
         st.markdown(f"""
         <div class='pick-card'>
             <div style='display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;'>
