@@ -9,7 +9,7 @@ import pytz
 
 # Page config
 st.set_page_config(
-    page_title="PrizePicks Player Props",
+    page_title="PrizePicks Player Props Only",
     page_icon="🏀",
     layout="wide"
 )
@@ -104,7 +104,7 @@ st.markdown("""
         100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0); }
     }
     
-    /* Sport badges - based on league IDs */
+    /* Sport badges */
     .badge-nba { background-color: #17408B; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-nhl { background-color: #000000; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-mlb { background-color: #041E42; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
@@ -249,7 +249,7 @@ if 'api_status' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING - Based on the league IDs you provided
+# COMPLETE SPORT MAPPING
 # ===================================================
 
 SPORT_MAPPING = {
@@ -325,32 +325,130 @@ SPORT_MAPPING = {
 }
 
 # ===================================================
-# RELAXED PLAYER NAME VALIDATION
+# STRICT PLAYER NAME VALIDATION - FILTER OUT TEAMS
 # ===================================================
 
-def is_real_player_name(name):
-    """Very relaxed check - keep almost everything except obvious team codes"""
-    if not name or len(name) < 2:
+# List of known team names and patterns
+TEAM_INDICATORS = [
+    # Soccer teams
+    'Nottm Forest', 'Crystal Palace', 'St. Pauli', 'Manchester', 'Liverpool', 
+    'Chelsea', 'Arsenal', 'Tottenham', 'Newcastle', 'Leicester', 'Everton',
+    'Wolverhampton', 'Southampton', 'Brighton', 'West Ham', 'Aston Villa',
+    'Brentford', 'Fulham', 'Bournemouth', 'Nottingham', 'Wolves', 'Leeds',
+    'Sheffield', 'Middlesbrough', 'Blackburn', 'Preston', 'Hull', 'Sunderland',
+    'Birmingham', 'Norwich', 'Watford', 'Stoke', 'QPR', 'Millwall', 'Cardiff',
+    'Swansea', 'Bristol', 'Reading', 'Coventry', 'Rotherham', 'Plymouth',
+    'Ipswich', 'Oxford', 'Cambridge', 'Charlton', 'Derby', 'Portsmouth',
+    'Bolton', 'Wigan', 'Blackpool', 'Barnsley', 'Burton', 'Accrington',
+    'Morecambe', 'Salford', 'Harrogate', 'Bradford', 'Carlisle', 'Barrow',
+    'Tranmere', 'Crewe', 'Doncaster', 'Gillingham', 'Wimbledon', 'Crawley',
+    'Swindon', 'Walsall', 'Mansfield', 'Colchester', 'Newport', 'Sutton',
+    'Stevenage', 'Hartlepool', 'Halifax', 'Aldershot', 'Bromley', 'Boreham Wood',
+    'Dagenham', 'Eastleigh', 'Solihull', 'Maidenhead', 'Wrexham', 'Chesterfield',
+    'York', 'Darlington', 'Scunthorpe', 'Boston', 'Kidderminster', 'Hereford',
+    'Gloucester', 'Fylde', 'Altrincham', 'Southport', 'Blyth', 'Buxton',
+    'Banbury', 'Brackley', 'Chorley', 'Curzon', 'Darlington', 'Farsley',
+    'Gateshead', 'Guiseley', 'Leamington', 'Nuneaton', 'Peterborough Sports',
+    'Rushall', 'South Shields', 'Spennymoor', 'Warrington', 'Worksop',
+    
+    # Soccer patterns
+    'FC', 'United', 'City', 'Rovers', 'County', 'Albion', 'Athletic',
+    'Wanderers', 'Town', 'Forest', 'Villa', 'Palace', 'Hotspur', 'Ham',
+    'North End', 'Orient', 'Vale', 'Dale', 'Ville', 'Star', 'Centenary',
+    'All Stars', 'Olympic', 'Olympiakos', 'PAOK', 'Panathinaikos', 'AEK',
+    'Fenerbahce', 'Galatasaray', 'Besiktas', 'Trabzonspor', 'Basaksehir',
+    'Ajax', 'PSV', 'Feyenoord', 'AZ', 'Twente', 'Utrecht', 'Sparta',
+    'Heerenveen', 'NEC', 'Willem II', 'Go Ahead', 'Heracles', 'Fortuna',
+    'Volendam', 'Emmen', 'RKC', 'Excelsior', 'Almere', 'Jong', 'Young Boys',
+    'Basel', 'Luzern', 'St. Gallen', 'Sion', 'Lugano', 'Lausanne',
+    'Winterthur', 'Grasshopper', 'Servette', 'Zurich', 'Thun', 'Aarau',
+    'Schaffhausen', 'Bellinzona', 'Wil', 'Vaduz', 'Rapperswil', 'Baden',
+    'Breitenrain', 'Cham', 'Delemont', 'Kriens', 'Stade Lausanne',
+    'Xamax', 'Etoile', 'Carouge', 'SLO', 'Brussels', 'Genk', 'Gent',
+    'Antwerp', 'Union', 'Brugge', 'Standard', 'Mechelen', 'Westerlo',
+    'Eupen', 'Kortrijk', 'OH Leuven', 'Charleroi', 'Cercle', 'Zulte',
+    'Waregem', 'Dender', 'Lommel', 'Deinze', 'Patro', 'Francs Borains',
+    'RWDM', 'Molenbeek', 'Beerschot', 'Lierse', 'Thes', 'Dessel',
+    'Heist', 'Hoogstraten', 'Kapellen', 'Olympia', 'Pepingen',
+    'Rebecq', 'Sint-Eloois', 'Tienen', 'Turnhout', 'Ursel', 'Wezel',
+    
+    # Other sports teams
+    'All Blacks', 'Wallabies', 'Springboks', 'Lions', 'Sharks', 'Bulls',
+    'Stormers', 'Hurricanes', 'Chiefs', 'Crusaders', 'Highlanders', 'Blues',
+    'Brumbies', 'Reds', 'Waratahs', 'Force', 'Rebels', 'Sunwolves',
+    'Dragons', 'Ospreys', 'Scarlets', 'Cardiff', 'Edinburgh', 'Glasgow',
+    'Leinster', 'Munster', 'Ulster', 'Connacht', 'Benetton', 'Zebre',
+    'Bath', 'Exeter', 'Gloucester', 'Harlequins', 'Leicester', 'Newcastle',
+    'Northampton', 'Sale', 'Saracens', 'Wasps', 'Worcester', 'Bristol',
+    'London Irish', 'London Welsh', 'London Scottish', 'Richmond',
+    'Blackheath', 'Rosslyn Park', 'Plymouth Albion', 'Cornish Pirates',
+    'Jersey Reds', 'Ealing', 'Bedford', 'Coventry', 'Doncaster', 'Ampthill',
+    'Caldy', 'Cambridge', 'Chinnor', 'Darlington', 'Hartpury', 'Rams',
+    'Richmond', 'Rosslyn', 'Sale FC', 'Sheffield', 'Taunton', 'Tonbridge',
+]
+
+def is_player_name(name):
+    """Strict check for real player names only - filter out teams"""
+    if not name or len(name) < 5:
         return False
     
-    # List of team codes to filter out
+    # List of team codes (3-letter abbreviations)
     team_codes = [
         'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
         'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
         'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS',
         'ANA', 'ARI', 'BUF', 'CGY', 'CAR', 'CBJ', 'EDM', 'FLA', 'LAK', 'MTL', 'NSH', 'NJD',
         'NYI', 'NYR', 'OTT', 'PIT', 'SJS', 'SEA', 'STL', 'TBL', 'VAN', 'VGK', 'WPG',
+        'ARS', 'CHE', 'LIV', 'MCI', 'MUN', 'TOT', 'EVE', 'NEW', 'LEI', 'WHU', 'AVL', 'SOU',
+        'WOL', 'BHA', 'BUR', 'CRY', 'FUL', 'BRE', 'BOU', 'NOT', 'LEE', 'SHU', 'MID', 'HUL',
+        'SUN', 'BLA', 'BIR', 'NOR', 'WAT', 'STK', 'QPR', 'MIL', 'CAR', 'SWA', 'BRI', 'REA',
+        'COV', 'ROT', 'PLY', 'IPS', 'OXF', 'CAM', 'CHA', 'POR', 'BOL', 'WIG', 'BAR', 'SAL',
     ]
     
-    # If it's exactly a team code, filter it out
+    # Check if it's a team code
     if name.upper() in team_codes:
         return False
     
-    # If it's a single word and all caps and short, likely a team
-    if ' ' not in name and name.isupper() and len(name) <= 4:
+    # Check if it's a single word and all caps (likely a team)
+    if name.isupper() and len(name) <= 6:
         return False
     
-    # Keep everything else
+    # Check if it matches any known team names
+    for team in TEAM_INDICATORS:
+        if team.lower() in name.lower():
+            return False
+    
+    # Check for common team patterns
+    name_lower = name.lower()
+    team_patterns = [' fc', ' united', ' city', ' rovers', ' county', ' albion', 
+                     ' athletic', ' wanderers', ' town', ' forest', ' villa', 
+                     ' palace', ' hotspur', ' ham', ' north end', ' orient', 
+                     ' vale', ' dale', ' star', ' olympic', ' olympiakos', 
+                     ' fenerbahce', ' galatasaray', ' besiktas', ' ajax', ' psv', 
+                     ' feyenoord', ' young boys', ' basel', ' luzern', ' st. gallen',
+                     ' grasshopper', ' servette', ' zurich', ' thun', ' vaduz']
+    
+    for pattern in team_patterns:
+        if pattern in name_lower:
+            return False
+    
+    # Must have at least a first and last name
+    parts = name.split()
+    if len(parts) < 2:
+        return False
+    
+    # Each part should be at least 2 characters
+    for part in parts:
+        if len(part) < 2:
+            return False
+        # Check for initials (like "L. James")
+        if len(part) == 2 and part[1] == '.':
+            continue
+    
+    # If it has a number, likely not a player
+    if any(char.isdigit() for char in name):
+        return False
+    
     return True
 
 # ===================================================
@@ -507,6 +605,7 @@ def get_player_projections_only():
     
     projections = []
     unknown_leagues = set()
+    filtered_teams = []
     
     for item in data.get('data', []):
         try:
@@ -519,8 +618,9 @@ def get_player_projections_only():
             if not player_name:
                 continue
             
-            # Only filter out obvious team props
-            if not is_real_player_name(player_name):
+            # STRICT filtering - only real player names
+            if not is_player_name(player_name):
+                filtered_teams.append(player_name)
                 continue
             
             league_id = 'default'
@@ -550,9 +650,11 @@ def get_player_projections_only():
         except:
             continue
     
-    # Store unknown leagues in session state for debugging
+    # Store debug info
     if unknown_leagues:
         st.session_state.unknown_leagues = unknown_leagues
+    if filtered_teams:
+        st.session_state.filtered_teams = list(set(filtered_teams))[:20]  # Store unique team names
     
     return pd.DataFrame(projections)
 
@@ -566,7 +668,7 @@ current_time = get_central_time()
 st.session_state.api_status = check_apis()
 
 # Header
-st.markdown('<p class="main-header">🏀 PrizePicks Player Props</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-header">🏀 PrizePicks Player Props Only</p>', unsafe_allow_html=True)
 
 # API Status
 st.markdown('<div class="api-status">', unsafe_allow_html=True)
@@ -629,26 +731,23 @@ with st.spinner("Loading player props from PrizePicks..."):
     df = get_player_projections_only()
     injuries_dict = fetch_injury_report()
 
-# If API fails, use comprehensive sample data
+# Show filtered teams in debug mode
+if st.session_state.debug_mode and 'filtered_teams' in st.session_state:
+    with st.sidebar.expander("🚫 Filtered Out Teams", expanded=False):
+        for team in st.session_state.filtered_teams[:10]:
+            st.write(f"• {team}")
+
+# If API fails, use sample data
 if df.empty:
-    st.info("📢 PrizePicks API limited - Using sample data")
+    st.info("📢 PrizePicks API limited - Using sample player props")
     
     sample_data = [
-        # NBA
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Kevin Durant', 'line': 24.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Giannis Antetokounmpo', 'line': 32.5, 'stat_type': 'PRA'},
         {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points'},
         {'sport': 'MLB', 'sport_emoji': '⚾', 'badge_class': 'badge-mlb', 'player_name': 'Shohei Ohtani', 'line': 1.5, 'stat_type': 'Hits'},
-        {'sport': 'PGA', 'sport_emoji': '⛳', 'badge_class': 'badge-pga', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score'},
-        {'sport': 'Tennis', 'sport_emoji': '🎾', 'badge_class': 'badge-tennis', 'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games'},
-        {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals'},
-        {'sport': 'MMA', 'sport_emoji': '🥊', 'badge_class': 'badge-mma', 'player_name': 'Jon Jones', 'line': 45.5, 'stat_type': 'Strikes'},
-        {'sport': 'Esports', 'sport_emoji': '🎮', 'badge_class': 'badge-esports', 'player_name': 'Faker', 'line': 5.5, 'stat_type': 'Kills'},
-        {'sport': 'NASCAR', 'sport_emoji': '🏎️', 'badge_class': 'badge-nascar', 'player_name': 'Kyle Busch', 'line': 5.5, 'stat_type': 'Fastest Laps'},
-        {'sport': 'CBB', 'sport_emoji': '🏀', 'badge_class': 'badge-cbb', 'player_name': 'Zach Edey', 'line': 22.5, 'stat_type': 'Points'},
-        {'sport': 'Unrivaled', 'sport_emoji': '🏀', 'badge_class': 'badge-unrivaled', 'player_name': 'Breanna Stewart', 'line': 20.5, 'stat_type': 'Points'},
     ]
     
     df = pd.DataFrame(sample_data)
@@ -669,12 +768,12 @@ st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
 
 # Show all available sports in sidebar
-with st.sidebar.expander("📊 All Available Sports", expanded=True):
+with st.sidebar.expander("📊 Available Sports", expanded=True):
     for sport, count in df['sport'].value_counts().items():
         pct = (count/len(df))*100
         st.markdown(f"**{sport}**: {count} props ({pct:.1f}%)")
 
-# Debug section
+# Debug section for unknown leagues
 if st.session_state.debug_mode and 'unknown_leagues' in st.session_state:
     with st.expander("🔍 Debug: Unknown League IDs", expanded=True):
         st.markdown('<div style="background-color:#1E1E1E; color:#00FF00; padding:1rem; border-radius:5px; font-family:monospace;">', unsafe_allow_html=True)
