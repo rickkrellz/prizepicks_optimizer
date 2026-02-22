@@ -14,102 +14,148 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for mobile
+# Custom CSS for better colors and visibility
 st.markdown("""
 <style>
     .main-header {
-        font-size: 1.8rem;
+        font-size: 2rem;
         font-weight: 700;
         color: #1E88E5;
         margin-bottom: 0.5rem;
         text-align: center;
     }
     .sub-header {
-        font-size: 1.3rem;
+        font-size: 1.5rem;
         font-weight: 600;
         color: #0D47A1;
         margin-top: 1rem;
     }
-    .value-positive {
-        color: #2E7D32;
-        font-weight: 600;
-    }
-    .value-negative {
-        color: #C62828;
-        font-weight: 600;
-    }
-    .recommendation-box {
-        background-color: #E3F2FD;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #1E88E5;
-        margin: 0.5rem 0;
-    }
-    .sport-badge {
-        background-color: #f0f2f6;
-        padding: 0.2rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.7rem;
-        display: inline-block;
-        margin-left: 0.3rem;
-    }
-    .injury-badge {
-        background-color: #f44336;
+    /* Better color scheme */
+    .more-badge {
+        background-color: #2E7D32;
         color: white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.7rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 2rem;
+        font-size: 0.9rem;
         font-weight: bold;
         display: inline-block;
-        margin-left: 0.3rem;
+        text-align: center;
+        min-width: 60px;
+    }
+    .less-badge {
+        background-color: #C62828;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 2rem;
+        font-size: 0.9rem;
+        font-weight: bold;
+        display: inline-block;
+        text-align: center;
+        min-width: 60px;
+    }
+    .hit-rate-high {
+        color: #2E7D32;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .hit-rate-low {
+        color: #C62828;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .sport-badge {
+        background-color: #E1F5FE;
+        color: #01579B;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    .injury-badge {
+        background-color: #FF9800;
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 1rem;
+        font-size: 0.8rem;
+        font-weight: bold;
+        display: inline-block;
     }
     .stButton button {
         width: 100%;
         font-size: 0.9rem;
         padding: 0.3rem;
+        border-radius: 0.5rem;
     }
     .pick-card {
         background-color: #ffffff;
-        padding: 0.8rem;
-        border-radius: 0.5rem;
+        padding: 1rem;
+        border-radius: 0.8rem;
         border: 1px solid #e0e0e0;
         margin: 0.5rem 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .player-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: 1rem;
     }
     .player-info {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.8rem;
         flex-wrap: wrap;
+    }
+    .player-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #0D47A1;
     }
     .player-stats {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 1rem;
         flex-wrap: wrap;
     }
-    .recommendation-badge {
-        color: white;
-        padding: 0.2rem 0.5rem;
-        border-radius: 1rem;
-        font-size: 0.8rem;
+    .stat-line {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #424242;
+    }
+    .entry-card {
+        background-color: #F5F5F5;
+        padding: 0.8rem;
+        border-radius: 0.8rem;
+        margin: 0.5rem 0;
+        border-left: 4px solid #1E88E5;
+    }
+    .summary-box {
+        background-color: #E3F2FD;
+        padding: 1.2rem;
+        border-radius: 0.8rem;
+        border-left: 4px solid #1E88E5;
+        margin: 1rem 0;
+    }
+    .positive-ev {
+        color: #2E7D32;
         font-weight: bold;
-        min-width: 45px;
-        text-align: center;
-        display: inline-block;
+        font-size: 1.1rem;
+    }
+    .negative-ev {
+        color: #C62828;
+        font-weight: bold;
+        font-size: 1.1rem;
     }
     .footer {
         text-align: center;
         color: #666;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
         margin-top: 2rem;
+        padding: 1rem;
+        background-color: #F5F5F5;
+        border-radius: 0.5rem;
     }
     @media (max-width: 768px) {
         .player-row {
@@ -175,6 +221,9 @@ def fetch_injury_report():
         'Devin Booker': {'status': 'OUT'},
         'Franz Wagner': {'status': 'OUT'},
         'Jalen Suggs': {'status': 'Questionable'},
+        'LeBron James': {'status': 'Active'},
+        'Stephen Curry': {'status': 'Active'},
+        'Luka Doncic': {'status': 'Active'},
     }
     return injuries
 
@@ -326,6 +375,8 @@ if df.empty:
     df = pd.DataFrame([
         {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Dillon Brooks', 'line': 23.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Desmond Bane', 'line': 18.5, 'stat_type': 'Points'},
+        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Anthony Black', 'line': 16.5, 'stat_type': 'Points'},
+        {'sport': 'NBA', 'sport_emoji': '🏀', 'player_name': 'Cade Cunningham', 'line': 25.5, 'stat_type': 'Points'},
     ])
 
 # Add injury status and hit rates
@@ -381,41 +432,35 @@ with col_left:
             })
         st.rerun()
     
-    # Display props - CLEAN VERSION
+    # Display props - CLEAN VERSION WITH PROPER INFO
     for idx, row in filtered_df.head(20).iterrows():
-        hit_color = "value-positive" if row['hit_rate'] > 0.5415 else "value-negative"
-        badge_color = "#4CAF50" if row['hit_rate'] > 0.5415 else "#f44336"
-        
-        st.markdown(f"""
-        <div class='pick-card'>
-            <div class='player-row'>
-                <div class='player-info'>
-                    <span style='font-size: 1.2rem;'>{row['sport_emoji']}</span>
-                    <span><strong>{row['player_name']}</strong></span>
-                    <span class='sport-badge'>{row['sport']}</span>
-                </div>
-                <div class='player-stats'>
-                    <span>{row['stat_type']} {row['line']:.1f}</span>
-                    <span class='{hit_color}' style='font-weight: bold;'>{row['hit_rate']*100:.1f}%</span>
-                    <span class='recommendation-badge' style='background-color: {badge_color};'>
-                        {row['recommendation']}
-                    </span>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            pick = st.selectbox(
-                "Pick",
-                ["MORE", "LESS"],
-                index=0 if row['recommendation'] == "MORE" else 1,
-                key=f"pick_{idx}",
-                label_visibility="collapsed"
-            )
-        with col2:
-            if st.button("➕ Add", key=f"add_{idx}", use_container_width=True):
+        # Create the prop card with all information visible
+        with st.container():
+            col1, col2, col3 = st.columns([2, 1, 1])
+            
+            with col1:
+                st.markdown(f"**{row['sport_emoji']} {row['player_name']}**")
+                st.markdown(f"<span class='sport-badge'>{row['sport']}</span>", unsafe_allow_html=True)
+                if row['injury_status']['status'] != 'Active':
+                    st.markdown(f"<span class='injury-badge'>{row['injury_status']['status']}</span>", unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"**{row['stat_type']}**")
+                st.markdown(f"{row['line']:.1f}")
+            
+            with col3:
+                # Hit rate with color
+                hit_color = "hit-rate-high" if row['hit_rate'] > 0.5415 else "hit-rate-low"
+                st.markdown(f"<span class='{hit_color}'>{row['hit_rate']*100:.1f}%</span>", unsafe_allow_html=True)
+                
+                # Recommendation badge
+                if row['recommendation'] == 'MORE':
+                    st.markdown("<span class='more-badge'>MORE</span>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<span class='less-badge'>LESS</span>", unsafe_allow_html=True)
+            
+            # Add button
+            if st.button("➕ Add to Entry", key=f"add_{idx}", use_container_width=True):
                 if len(st.session_state.picks) < num_legs:
                     st.session_state.picks.append({
                         'sport_emoji': row['sport_emoji'],
@@ -423,29 +468,37 @@ with col_left:
                         'player': row['player_name'],
                         'stat': row['stat_type'],
                         'line': row['line'],
-                        'pick': pick,
+                        'pick': row['recommendation'],
                         'hit_rate': row['hit_rate'],
                     })
                     st.rerun()
+            
+            st.markdown("---")
 
 with col_right:
     st.markdown('<p class="sub-header">📝 Your Entry</p>', unsafe_allow_html=True)
     
     if st.session_state.picks:
         for i, pick in enumerate(st.session_state.picks):
-            st.markdown(f"""
-            <div class='pick-card'>
-                <div style='display: flex; justify-content: space-between;'>
-                    <span><strong>{pick['sport_emoji']} {pick['player']}</strong></span>
-                </div>
-                <div><span style='font-weight: bold; color: {"#4CAF50" if pick["pick"]=="MORE" else "#f44336"};'>{pick['pick']}</span> {pick['stat']} {pick['line']:.1f}</div>
-                <div style='font-size: 0.9rem;'>Hit rate: {pick['hit_rate']*100:.1f}%</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            if st.button("❌ Remove", key=f"remove_{i}", use_container_width=True):
-                st.session_state.picks.pop(i)
-                st.rerun()
+            with st.container():
+                col1, col2 = st.columns([3, 1])
+                
+                with col1:
+                    st.markdown(f"**{pick['sport_emoji']} {pick['player']}**")
+                    st.markdown(f"{pick['stat']} {pick['line']:.1f}")
+                    st.markdown(f"Hit rate: {pick['hit_rate']*100:.1f}%")
+                
+                with col2:
+                    if pick['pick'] == 'MORE':
+                        st.markdown("<span class='more-badge'>MORE</span>", unsafe_allow_html=True)
+                    else:
+                        st.markdown("<span class='less-badge'>LESS</span>", unsafe_allow_html=True)
+                    
+                    if st.button("❌", key=f"remove_{i}"):
+                        st.session_state.picks.pop(i)
+                        st.rerun()
+                
+                st.markdown("---")
         
         if len(st.session_state.picks) == num_legs:
             avg_hit = np.mean([p['hit_rate'] for p in st.session_state.picks])
@@ -463,12 +516,12 @@ with col_right:
                 roi = ((ev - st.session_state.entry_amount) / st.session_state.entry_amount) * 100
                 
                 st.markdown(f"""
-                <div class='recommendation-box'>
+                <div class='summary-box'>
                     <h4 style='margin:0;'>🎯 Entry Summary</h4>
                     <p><strong>Avg Hit Rate:</strong> {avg_hit*100:.1f}%</p>
                     <p><strong>Expected Return:</strong> ${ev:.2f}</p>
                     <p><strong>ROI:</strong> {roi:.1f}%</p>
-                    <p style='color: {"green" if roi>0 else "red"};'><strong>{'✅ +EV' if roi>0 else '⚠️ -EV'}</strong></p>
+                    <p class='{"positive-ev" if roi>0 else "negative-ev"}'><strong>{'✅ +EV' if roi>0 else '⚠️ -EV'}</strong></p>
                 </div>
                 """, unsafe_allow_html=True)
         
@@ -482,6 +535,6 @@ with col_right:
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} live props loaded | {len(df[df['recommendation']=='MORE']):,} MORE / {len(df[df['recommendation']=='LESS']):,} LESS</p>
+    <p>🏀 {len(df):,} live props loaded | {len(df[df['recommendation']=='MORE']):,} MORE / {len(df[df['recommendation']=='LESS']):,} LESS recommendations</p>
 </div>
 """, unsafe_allow_html=True)
