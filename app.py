@@ -49,6 +49,40 @@ st.markdown("""
         margin: 1rem 0;
     }
     
+    /* API Status indicators */
+    .api-status {
+        display: flex;
+        gap: 1rem;
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        background-color: #2C3E50;
+        border-radius: 8px;
+        border: 1px solid #1E88E5;
+    }
+    .api-status-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .status-dot.green {
+        background-color: #2E7D32;
+        box-shadow: 0 0 10px #2E7D32;
+    }
+    .status-dot.red {
+        background-color: #C62828;
+        box-shadow: 0 0 10px #C62828;
+    }
+    .status-dot.yellow {
+        background-color: #FFC107;
+        box-shadow: 0 0 10px #FFC107;
+    }
+    
     /* Sport badges - high contrast */
     .badge-nba { background-color: #17408B; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-nhl { background-color: #000000; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
@@ -62,15 +96,15 @@ st.markdown("""
     .badge-nascar { background-color: #8B4513; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     .badge-other { background-color: #555555; color: #FFFFFF; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; border: 1px solid #FFFFFF; }
     
-    /* MORE/LESS badges - high contrast */
+    /* MORE/LESS badges */
     .more-badge { background-color: #2E7D32; color: #FFFFFF; padding: 0.3rem 1rem; border-radius: 25px; font-weight: bold; font-size: 0.9rem; display: inline-block; min-width: 70px; text-align: center; border: 2px solid #FFFFFF; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
     .less-badge { background-color: #C62828; color: #FFFFFF; padding: 0.3rem 1rem; border-radius: 25px; font-weight: bold; font-size: 0.9rem; display: inline-block; min-width: 70px; text-align: center; border: 2px solid #FFFFFF; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
     
-    /* Hit rate colors - high contrast */
+    /* Hit rate colors */
     .hit-high { color: #FFFFFF; font-weight: bold; font-size: 1.1rem; background-color: #2E7D32; padding: 0.2rem 0.5rem; border-radius: 8px; border: 1px solid #FFFFFF; }
     .hit-low { color: #FFFFFF; font-weight: bold; font-size: 1.1rem; background-color: #C62828; padding: 0.2rem 0.5rem; border-radius: 8px; border: 1px solid #FFFFFF; }
     
-    /* Cards - dark backgrounds */
+    /* Cards */
     .prop-card {
         background-color: #2C3E50;
         padding: 1rem;
@@ -98,7 +132,7 @@ st.markdown("""
         border: 2px solid #1E88E5;
     }
     
-    /* Player name - bright */
+    /* Player name */
     .player-name {
         font-size: 1.2rem;
         font-weight: 700;
@@ -106,7 +140,7 @@ st.markdown("""
         text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
     
-    /* Stat line - light background with dark text for contrast */
+    /* Stat line */
     .stat-line {
         background-color: #ECF0F1;
         color: #2C3E50;
@@ -171,6 +205,11 @@ if 'auto_select' not in st.session_state:
     st.session_state.auto_select = True
 if 'show_recommended' not in st.session_state:
     st.session_state.show_recommended = False
+if 'api_status' not in st.session_state:
+    st.session_state.api_status = {
+        'prizepicks': 'checking',
+        'odds_api': 'checking'
+    }
 
 # ===================================================
 # THE-ODDS-API KEY
@@ -179,11 +218,14 @@ if 'show_recommended' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# SPORT MAPPING
+# SPORT MAPPING - Complete with all sports
 # ===================================================
 
 SPORT_MAPPING = {
+    # MMA/UFC
     '12': {'name': 'MMA', 'emoji': '🥊', 'badge': 'badge-mma'},
+    
+    # Esports / Gaming
     '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '265': {'name': 'CS2', 'emoji': '🎮', 'badge': 'badge-esports'},
     '121': {'name': 'LoL', 'emoji': '🎮', 'badge': 'badge-esports'},
@@ -191,81 +233,135 @@ SPORT_MAPPING = {
     '159': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '161': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '145': {'name': 'RL', 'emoji': '🎮', 'badge': 'badge-esports'},
+    
+    # Boxing
     '42': {'name': 'Boxing', 'emoji': '🥊', 'badge': 'badge-mma'},
+    
+    # College Basketball
     '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '149': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
-    '192': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    '290': {'name': 'CBB 1H', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # NBA Quarters
+    '149': {'name': 'NBA 4Q', 'emoji': '🏀', 'badge': 'badge-nba'},
+    '192': {'name': 'NBA 1Q', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # Table Tennis
     '286': {'name': 'Table Tennis', 'emoji': '🏓', 'badge': 'badge-other'},
+    
+    # Golf
     '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
     '1': {'name': 'PGA', 'emoji': '⛳', 'badge': 'badge-pga'},
+    
+    # Tennis
     '5': {'name': 'Tennis', 'emoji': '🎾', 'badge': 'badge-tennis'},
+    
+    # Curling
     '277': {'name': 'Curling', 'emoji': '🥌', 'badge': 'badge-other'},
+    
+    # Olympic Hockey
     '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-nhl'},
+    
+    # MLB
     '43': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # NBA
     '7': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # Handball
     '284': {'name': 'Handball', 'emoji': '🤾', 'badge': 'badge-other'},
+    
+    # NASCAR
     '4': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
+    
+    # Unrivaled
     '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-nba'},
+    
+    # NHL
     '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    '190': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # MLB Season
+    '190': {'name': 'MLB SZN', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    
+    # Soccer
+    '6': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
+    '44': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
+    '45': {'name': 'Soccer', 'emoji': '⚽', 'badge': 'badge-soccer'},
+    
     'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
 
 # ===================================================
-# STRICT PLAYER NAME VALIDATION
+# RELAXED PLAYER NAME VALIDATION
 # ===================================================
 
 def is_real_player_name(name):
-    """Strict check for real player names only"""
-    if not name or len(name) < 5:
+    """Check for real player names - more relaxed to include NBA players"""
+    if not name or len(name) < 3:
         return False
     
-    # List of all NBA team codes to filter out
+    # List of team codes to filter out
     team_codes = [
         'ATL', 'BOS', 'BKN', 'CHA', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND',
         'LAC', 'LAL', 'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX',
-        'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS', 'LAL', 'LAC', 'NYK', 'GSW', 'MIA',
-        # NHL
-        'ANA', 'ARI', 'BOS', 'BUF', 'CGY', 'CAR', 'CHI', 'COL', 'CBJ', 'DAL', 'DET', 'EDM',
-        'FLA', 'LAK', 'MIN', 'MTL', 'NSH', 'NJD', 'NYI', 'NYR', 'OTT', 'PHI', 'PIT', 'SJS',
-        'SEA', 'STL', 'TBL', 'TOR', 'VAN', 'VGK', 'WSH', 'WPG',
-        # MLB
-        'ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CIN', 'CLE', 'COL', 'CWS', 'DET', 'HOU', 'KCR',
-        'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SDP', 'SFG',
-        'SEA', 'STL', 'TBR', 'TEX', 'TOR', 'WSN',
+        'POR', 'SAC', 'SAS', 'TOR', 'UTA', 'WAS',
+        'ANA', 'ARI', 'BUF', 'CGY', 'CAR', 'CBJ', 'EDM', 'FLA', 'LAK', 'MTL', 'NSH', 'NJD',
+        'NYI', 'NYR', 'OTT', 'PIT', 'SJS', 'SEA', 'STL', 'TBL', 'VAN', 'VGK', 'WPG',
     ]
     
-    # Check if it's a team code
+    # If it's exactly a team code, filter it out
     if name.upper() in team_codes:
         return False
     
-    # Check if it's a 3-letter uppercase code
-    if name.isupper() and len(name) <= 4:
+    # If it's a single word and all caps, likely a team
+    if ' ' not in name and name.isupper() and len(name) <= 4:
         return False
     
-    # Must have at least one space
-    if ' ' not in name:
+    # Allow names like "LeBron James", "Cristiano Ronaldo", etc.
+    # They can have spaces and various lengths
+    
+    # Check for common non-player patterns
+    non_player_indicators = ['Round', 'Game', 'Match', 'Team', 'United', 'FC', 'SC', 'CF', 'Club']
+    if any(indicator in name for indicator in non_player_indicators):
         return False
     
-    # Split into parts
-    parts = name.split()
-    if len(parts) < 2:
-        return False
-    
-    # Each part should be at least 2 letters
-    for part in parts:
-        if len(part) < 2:
-            return False
-        # Check for common non-player patterns
-        if part in ['Team', 'United', 'FC', 'SC', 'CF', 'Club', 'City']:
-            return False
-    
-    # Check for numeric patterns (like "Round 1", "Game 1")
+    # If it has a number, likely not a player
     if any(char.isdigit() for char in name):
         return False
     
     return True
+
+# ===================================================
+# API STATUS CHECK
+# ===================================================
+
+def check_apis():
+    """Check status of both APIs"""
+    # Check PrizePicks
+    pp_status = 'red'
+    try:
+        response = requests.get("https://api.prizepicks.com/projections", 
+                               headers={'User-Agent': 'Mozilla/5.0'}, 
+                               timeout=5)
+        if response.status_code == 200:
+            pp_status = 'green'
+        else:
+            pp_status = 'yellow'
+    except:
+        pp_status = 'red'
+    
+    # Check The-Odds-API
+    odds_status = 'red'
+    try:
+        url = f"https://api.the-odds-api.com/v4/sports/?apiKey={ODDS_API_KEY}"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            odds_status = 'green'
+        else:
+            odds_status = 'yellow'
+    except:
+        odds_status = 'red'
+    
+    return {'prizepicks': pp_status, 'odds_api': odds_status}
 
 # ===================================================
 # INJURY REPORT
@@ -300,15 +396,19 @@ def get_player_injury_status(player_name, injuries_dict):
     return {'status': 'Active'}
 
 # ===================================================
-# HIT RATE CALCULATOR - Adjusted to show more variety
+# HIT RATE CALCULATOR
 # ===================================================
 
 def calculate_projected_hit_rate(line, sport, injury_status):
     base_rates = {
         'NBA': 0.52,
+        'NBA 1Q': 0.50,
+        'NBA 4Q': 0.50,
         'NHL': 0.51,
         'MLB': 0.53,
+        'MLB SZN': 0.53,
         'CBB': 0.51,
+        'CBB 1H': 0.50,
         'PGA': 0.48,
         'Golf': 0.48,
         'NASCAR': 0.50,
@@ -319,6 +419,12 @@ def calculate_projected_hit_rate(line, sport, injury_status):
         'Esports': 0.52,
         'RL': 0.52,
         'Tennis': 0.50,
+        'Soccer': 0.50,
+        'Handball': 0.50,
+        'Table Tennis': 0.50,
+        'Curling': 0.50,
+        'Olympic Hockey': 0.51,
+        'Unrivaled': 0.50,
     }
     
     base_rate = base_rates.get(sport, 0.51)
@@ -340,7 +446,7 @@ def calculate_projected_hit_rate(line, sport, injury_status):
     elif injury_status['status'] == 'Questionable':
         injury_factor = 0.8
     
-    # More random variation to show both MORE and LESS
+    # Random variation
     random_factor = random.uniform(0.94, 1.06)
     
     hit_rate = base_rate * line_factor * injury_factor * random_factor
@@ -392,7 +498,7 @@ def get_player_projections_only():
             if not player_name:
                 continue
             
-            # STRICT filtering - only real player names
+            # Only filter out obvious team props, keep player names
             if not is_real_player_name(player_name):
                 continue
             
@@ -424,8 +530,35 @@ def get_player_projections_only():
 # ===================================================
 
 current_time = get_central_time()
+
+# Check API status
+st.session_state.api_status = check_apis()
+
+# Header with API status
 st.markdown('<p class="main-header">🏀 PrizePicks Player Props Only</p>', unsafe_allow_html=True)
-st.markdown(f"**Last Updated:** {current_time.strftime('%I:%M:%S %p CT')}")
+
+# API Status indicators
+col1, col2, col3 = st.columns([1, 1, 2])
+with col1:
+    pp_dot = "green" if st.session_state.api_status['prizepicks'] == 'green' else "red"
+    st.markdown(f"""
+    <div class='api-status-item'>
+        <span class='status-dot {pp_dot}'></span>
+        <span>PrizePicks API: {st.session_state.api_status['prizepicks'].upper()}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    odds_dot = "green" if st.session_state.api_status['odds_api'] == 'green' else "red"
+    st.markdown(f"""
+    <div class='api-status-item'>
+        <span class='status-dot {odds_dot}'></span>
+        <span>Odds API: {st.session_state.api_status['odds_api'].upper()}</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"**Last Updated:** {current_time.strftime('%I:%M:%S %p CT')}")
 
 # Sidebar
 with st.sidebar:
@@ -462,10 +595,12 @@ if df.empty:
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'LeBron James', 'line': 25.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Stephen Curry', 'line': 26.5, 'stat_type': 'Points'},
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Luka Doncic', 'line': 31.5, 'stat_type': 'PRA'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Giannis Antetokounmpo', 'line': 32.5, 'stat_type': 'PRA'},
-        {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Joel Embiid', 'line': 30.5, 'stat_type': 'Points'},
         {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points'},
         {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Auston Matthews', 'line': 0.5, 'stat_type': 'Goals'},
+        {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals'},
+        {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Cristiano Ronaldo', 'line': 1.5, 'stat_type': 'Shots'},
+        {'sport': 'PGA', 'sport_emoji': '⛳', 'badge_class': 'badge-pga', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score'},
+        {'sport': 'Tennis', 'sport_emoji': '🎾', 'badge_class': 'badge-tennis', 'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games'},
     ])
 
 # Add injury status
@@ -482,13 +617,19 @@ st.sidebar.markdown(f"**Player Props:** {len(df):,}")
 st.sidebar.markdown(f"**MORE:** {len(df[df['recommendation']=='MORE']):,}")
 st.sidebar.markdown(f"**LESS:** {len(df[df['recommendation']=='LESS']):,}")
 
+# Show all available sports in sidebar
+with st.sidebar.expander("📊 All Available Sports", expanded=True):
+    for sport, count in df['sport'].value_counts().items():
+        pct = (count/len(df))*100
+        st.markdown(f"**{sport}**: {count} props ({pct:.1f}%)")
+
 # Main content columns
 col_left, col_right = st.columns([1.3, 0.7])
 
 with col_left:
     st.markdown('<p class="section-header">📋 Available Player Props</p>', unsafe_allow_html=True)
     
-    # Sport filter
+    # Sport filter - show ALL sports
     sports_list = sorted(df['sport'].unique())
     selected_sports = st.multiselect("Select Sports", sports_list, default=['NBA'] if 'NBA' in sports_list else [])
     
@@ -496,6 +637,9 @@ with col_left:
     filtered_df = df.copy()
     if selected_sports:
         filtered_df = filtered_df[filtered_df['sport'].isin(selected_sports)]
+    else:
+        # If no sports selected, show all
+        filtered_df = df.copy()
     
     if st.session_state.show_recommended and not filtered_df.empty:
         filtered_df = filtered_df[filtered_df['hit_rate'] > 0.5415]
@@ -620,7 +764,7 @@ with col_right:
 st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
-    <p>🏀 {len(df):,} player props only | 
+    <p>🏀 {len(df):,} player props across {len(df['sport'].unique())} sports | 
     <span style='color:#FFFFFF; background-color:#2E7D32; padding:0.2rem 0.5rem; border-radius:20px;'>{len(df[df['recommendation']=='MORE']):,} MORE</span> / 
     <span style='color:#FFFFFF; background-color:#C62828; padding:0.2rem 0.5rem; border-radius:20px;'>{len(df[df['recommendation']=='LESS']):,} LESS</span>
     </p>
