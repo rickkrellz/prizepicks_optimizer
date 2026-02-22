@@ -23,7 +23,7 @@ def get_central_time():
     central_now = utc_now.astimezone(central_tz)
     return central_now
 
-# HIGH CONTRAST CSS - Dark backgrounds, light text
+# HIGH CONTRAST CSS - Fixed button colors
 st.markdown("""
 <style>
     /* Main header */
@@ -59,6 +59,7 @@ st.markdown("""
         border-radius: 10px;
         border: 1px solid #1E88E5;
         justify-content: center;
+        flex-wrap: wrap;
     }
     .api-status-item {
         display: flex;
@@ -175,19 +176,19 @@ st.markdown("""
         border: 1px solid #1E88E5;
     }
     
-    /* Buttons */
-    .stButton button {
+    /* Buttons - FIXED */
+    div.stButton > button:first-child {
         width: 100%;
         border-radius: 20px;
         font-weight: 600;
-        background-color: #1E88E5;
-        color: #FFFFFF;
-        border: 2px solid #FFFFFF;
+        background-color: #1E88E5 !important;
+        color: #FFFFFF !important;
+        border: 2px solid #FFFFFF !important;
     }
-    .stButton button:hover {
-        background-color: #0D47A1;
-        color: #FFFFFF;
-        border: 2px solid #FFFFFF;
+    div.stButton > button:first-child:hover {
+        background-color: #0D47A1 !important;
+        color: #FFFFFF !important;
+        border: 2px solid #FFFFFF !important;
     }
     
     /* Footer */
@@ -249,7 +250,7 @@ if 'api_status' not in st.session_state:
 ODDS_API_KEY = "047afdffc14ecda16cb02206a22070c4"
 
 # ===================================================
-# COMPLETE SPORT MAPPING
+# COMPLETE SPORT MAPPING - ALL LEAGUES
 # ===================================================
 
 SPORT_MAPPING = {
@@ -261,24 +262,29 @@ SPORT_MAPPING = {
     
     # Esports / Gaming
     '121': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
     '145': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '159': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '161': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '174': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     '176': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '265': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '383': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '80': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '84': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    
+    # Golf
+    '131': {'name': 'Golf', 'emoji': '⛳', 'badge': 'badge-pga'},
     
     # MLB Season
-    '190': {'name': 'MLB SZN', 'emoji': '⚾', 'badge': 'badge-mlb'},
+    '190': {'name': 'MLB', 'emoji': '⚾', 'badge': 'badge-mlb'},
     
     # NBA Quarters
     '192': {'name': 'NBA', 'emoji': '🏀', 'badge': 'badge-nba'},
     
     # College Basketball
     '20': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
-    
-    # Esports
-    '265': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
+    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
     
     # Curling
     '277': {'name': 'Curling', 'emoji': '🥌', 'badge': 'badge-other'},
@@ -289,14 +295,8 @@ SPORT_MAPPING = {
     # Unrivaled
     '288': {'name': 'Unrivaled', 'emoji': '🏀', 'badge': 'badge-unrivaled'},
     
-    # College Basketball 1H
-    '290': {'name': 'CBB', 'emoji': '🏀', 'badge': 'badge-cbb'},
-    
     # Olympic Hockey
     '379': {'name': 'Olympic Hockey', 'emoji': '🏒', 'badge': 'badge-ohockey'},
-    
-    # Esports
-    '383': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     
     # NASCAR
     '4': {'name': 'NASCAR', 'emoji': '🏎️', 'badge': 'badge-nascar'},
@@ -315,11 +315,6 @@ SPORT_MAPPING = {
     
     # NHL
     '8': {'name': 'NHL', 'emoji': '🏒', 'badge': 'badge-nhl'},
-    
-    # Esports
-    '80': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '82': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
-    '84': {'name': 'Esports', 'emoji': '🎮', 'badge': 'badge-esports'},
     
     'default': {'name': 'Other', 'emoji': '🏆', 'badge': 'badge-other'}
 }
@@ -462,9 +457,12 @@ def check_apis():
         headers = {
             'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
             'Accept': 'application/json',
+            'Accept-Language': 'en-US,en;q=0.9',
             'Referer': 'https://app.prizepicks.com/',
+            'Origin': 'https://app.prizepicks.com',
+            'Connection': 'keep-alive',
         }
-        response = requests.get("https://api.prizepicks.com/projections", headers=headers, timeout=5)
+        response = requests.get("https://api.prizepicks.com/projections", headers=headers, timeout=10)
         if response.status_code == 200:
             pp_status = 'green'
         elif response.status_code == 403:
@@ -477,7 +475,7 @@ def check_apis():
     odds_status = 'red'
     try:
         url = f"https://api.the-odds-api.com/v4/sports/?apiKey={ODDS_API_KEY}"
-        response = requests.get(url, timeout=5)
+        response = requests.get(url, timeout=10)
         if response.status_code == 200:
             odds_status = 'green'
         else:
@@ -528,7 +526,6 @@ def calculate_projected_hit_rate(line, sport, injury_status):
         'NBA': 0.52,
         'NHL': 0.51,
         'MLB': 0.53,
-        'MLB SZN': 0.53,
         'CBB': 0.51,
         'Soccer': 0.50,
         'PGA': 0.48,
@@ -570,7 +567,7 @@ def calculate_projected_hit_rate(line, sport, injury_status):
     return hit_rate
 
 # ===================================================
-# PRIZEPICKS API
+# PRIZEPICKS API - FIXED
 # ===================================================
 
 @st.cache_data(ttl=300)
@@ -584,15 +581,27 @@ def fetch_prizepicks_projections():
         'Referer': 'https://app.prizepicks.com/',
         'Origin': 'https://app.prizepicks.com',
         'Connection': 'keep-alive',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
     }
     
     try:
         time.sleep(0.5)
         response = requests.get(url, headers=headers, timeout=10)
+        
         if response.status_code == 200:
+            st.session_state.api_status['prizepicks'] = 'green'
             return response.json()
-        return None
-    except:
+        elif response.status_code == 403:
+            st.session_state.api_status['prizepicks'] = 'yellow'
+            return None
+        else:
+            st.session_state.api_status['prizepicks'] = 'red'
+            return None
+            
+    except Exception as e:
+        st.session_state.api_status['prizepicks'] = 'red'
         return None
 
 @st.cache_data(ttl=300)
@@ -654,7 +663,7 @@ def get_player_projections_only():
     if unknown_leagues:
         st.session_state.unknown_leagues = unknown_leagues
     if filtered_teams:
-        st.session_state.filtered_teams = list(set(filtered_teams))[:20]  # Store unique team names
+        st.session_state.filtered_teams = list(set(filtered_teams))[:20]
     
     return pd.DataFrame(projections)
 
@@ -748,6 +757,10 @@ if df.empty:
         {'sport': 'NBA', 'sport_emoji': '🏀', 'badge_class': 'badge-nba', 'player_name': 'Giannis Antetokounmpo', 'line': 32.5, 'stat_type': 'PRA'},
         {'sport': 'NHL', 'sport_emoji': '🏒', 'badge_class': 'badge-nhl', 'player_name': 'Connor McDavid', 'line': 1.5, 'stat_type': 'Points'},
         {'sport': 'MLB', 'sport_emoji': '⚾', 'badge_class': 'badge-mlb', 'player_name': 'Shohei Ohtani', 'line': 1.5, 'stat_type': 'Hits'},
+        {'sport': 'Tennis', 'sport_emoji': '🎾', 'badge_class': 'badge-tennis', 'player_name': 'Novak Djokovic', 'line': 12.5, 'stat_type': 'Games'},
+        {'sport': 'Soccer', 'sport_emoji': '⚽', 'badge_class': 'badge-soccer', 'player_name': 'Lionel Messi', 'line': 0.5, 'stat_type': 'Goals'},
+        {'sport': 'PGA', 'sport_emoji': '⛳', 'badge_class': 'badge-pga', 'player_name': 'Scottie Scheffler', 'line': 68.5, 'stat_type': 'Round Score'},
+        {'sport': 'MMA', 'sport_emoji': '🥊', 'badge_class': 'badge-mma', 'player_name': 'Jon Jones', 'line': 45.5, 'stat_type': 'Strikes'},
     ]
     
     df = pd.DataFrame(sample_data)
